@@ -1,0 +1,45 @@
+{
+  "name": "coinopai-mcp",
+  "version": "1.0.4",
+  "description": "MCP server for CoinOpAI — agent automation prompts and crypto signals via x402 micropayments on Base",
+  "main": "index.js",
+  "bin": {
+    "coinopai-mcp": "index.js"
+  },
+  "files": [
+    "index.js",
+    "README.md"
+  ],
+  "scripts": {
+    "start": "node index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "mcp",
+    "x402",
+    "agent",
+    "automation",
+    "crypto",
+    "signals",
+    "coinbase",
+    "base",
+    "usdc",
+    "micropayments",
+    "claude"
+  ],
+  "author": "CoinOpAI",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/coinopai/coinopai-mcp"
+  },
+  "homepage": "https://x402.coinopai.com",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.10.1",
+    "@x402/core": "^2.11.0",
+    "@x402/evm": "^2.11.0",
+    "viem": "^2.0.0"
+  }
+}
