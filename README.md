@@ -113,17 +113,17 @@ It gets some right. It gets some wrong. The loop makes both visible.
 
 ## Tools
 
-| Tool | What it does | Cost |
-|------|-------------|------|
-| `check_trade_preflight` | Gate check: market allowed, cooldown, regime, signal strength | $0.05 |
-| `get_crypto_decision` | CONSIDER\_LONG/SHORT/NO\_ACTION + `decision_id` | $0.15 |
-| `audit_trade_decision` | Verify against real prices: verdict + PnL% | $0.07 |
-| `get_crypto_signals` | Live directional signals for BTC, ETH, SOL, XRP, ADA | $0.05 |
-| `get_crypto_risk` | Market risk state + regime detection | $0.02 |
-| `get_crypto_signal_history` | Up to 168h of signal history | $0.05 |
-| `search_agent_automations` | Search 819 agent automation prompts | $0.01 |
-| `get_agent_automation` | Full prompt + workflow steps by slug | $0.01 |
-| `list_automation_categories` | All 35 automation categories with counts | $0.005 |
+| Tool | What it does | Cost | Affiliate |
+|------|-------------|------|-----------|
+| `check_trade_preflight` | Gate check: market allowed, cooldown, regime, signal strength | $0.05 | ✓ |
+| `get_crypto_decision` | CONSIDER\_LONG/SHORT/NO\_ACTION + `decision_id` | $0.15 | ✓ |
+| `audit_trade_decision` | Verify against real prices: verdict + PnL% | $0.07 | ✓ |
+| `get_crypto_signals` | Live directional signals for BTC, ETH, SOL, XRP, ADA | $0.05 | ✓ |
+| `get_crypto_signal_history` | Up to 168h of signal history | $0.05 | ✓ |
+| `get_crypto_risk` | Market risk state + regime detection | $0.02 | — |
+| `search_agent_automations` | Search 819 agent automation prompts | $0.01 | — |
+| `get_agent_automation` | Full prompt + workflow steps by slug | $0.01 | — |
+| `list_automation_categories` | All 35 automation categories with counts | $0.005 | — |
 
 No API keys. No subscriptions. Pay per call in USDC.
 
@@ -237,9 +237,80 @@ Route to an available symbol or wait 15 minutes for the next cycle.
 
 ---
 
+## Affiliate Attribution (via Pyrimid)
+
+High-value tools accept an optional `affiliate_id` parameter. When provided, payment routes through the [Pyrimid](https://pyrimid.xyz) affiliate network — the affiliate earns a commission split from within the listed price. **No extra cost to the caller.**
+
+### How the split works
+
+```
+Direct call (no affiliate_id):
+  Caller pays $0.15  →  CoinOpAI receives $0.15
+
+Affiliate call (affiliate_id present):
+  Caller pays $0.15  →  CoinOpAI: 79.2% ($0.1188)
+                      →  Affiliate: 19.8% ($0.0297)
+                      →  Protocol:   1.0% ($0.0015)
+```
+
+The buyer always pays the listed price. The split comes out of the vendor's portion.
+
+### Usage
+
+Pass `affiliate_id` in any supporting tool call:
+
+```js
+// As an agent or user
+await mcp.call("get_crypto_decision", {
+  symbol: "BTC",
+  affiliate_id: "af_youraffiliateID"
+})
+```
+
+### Building a wrapper? Set it once via env
+
+If you're building an agent framework, MCP wrapper, or automation that embeds CoinOpAI tools, set your affiliate ID as an environment variable. Every call through your wrapper earns you a commission automatically.
+
+```json
+{
+  "mcpServers": {
+    "coinopai": {
+      "command": "npx",
+      "args": ["-y", "coinopai-mcp"],
+      "env": {
+        "WALLET_PRIVATE_KEY": "0x<agent-wallet-key>",
+        "PYRIMID_AFFILIATE_ID": "af_<your-affiliate-id>"
+      }
+    }
+  }
+}
+```
+
+The tool-level `affiliate_id` argument takes precedence over the env var. Callers can always override.
+
+### Without an affiliate_id
+
+Normal x402 flow — CoinOpAI receives 100% of the listed price. Nothing changes for the caller.
+
+---
+
 ## Disclaimer
 
 Decision outputs are probabilistic signals for experimental automated workflows only. Not financial advice. Early system with a small sample size. Results will vary. Never risk capital you can't afford to lose.
+
+---
+
+## Part of the [ForgeMesh](https://github.com/forgemeshlabs/forgemesh) Ecosystem
+
+Infrastructure for monetized agent ecosystems.
+
+| Package | What | Install |
+|---------|------|---------|
+| [affiliate-router-mcp](https://github.com/forgemeshlabs/affiliate-router-mcp) | Vendor-neutral monetization routing | `npm i affiliate-router-mcp` |
+| **coinopai-mcp** | Paid crypto intelligence (this package) | `npm i coinopai-mcp` |
+| [coinopai-imagegen](https://github.com/forgemeshlabs/coinopai-imagegen) | Paid image generation service | — |
+
+Each package works standalone. No shared dependency required.
 
 ---
 
