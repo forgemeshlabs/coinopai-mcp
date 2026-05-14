@@ -5,11 +5,33 @@ const { Server } = require("@modelcontextprotocol/sdk/server/index.js");
 const { StdioServerTransport } = require("@modelcontextprotocol/sdk/server/stdio.js");
 const { CallToolRequestSchema, ListToolsRequestSchema } = require("@modelcontextprotocol/sdk/types.js");
 const { x402Client, x402HTTPClient } = require("@x402/core/client");
-const { ExactEvmScheme } = require("@x402/evm/exact/client");
+const { registerExactEvmScheme } = require("@x402/evm/exact/client");
 const { toClientEvmSigner } = require("@x402/evm");
 const { privateKeyToAccount } = require("viem/accounts");
+const { createPublicClient, createWalletClient, http, parseAbi } = require("viem");
+const { base } = require("viem/chains");
 
 const BASE_URL = "https://x402.coinopai.com";
+
+// Pyrimid constants — on-chain addresses for affiliate payment routing
+const PYRIMID_ROUTER = "0xc949AEa380D7b7984806143ddbfE519B03ABd68B";
+const PYRIMID_VENDOR_ID = "0x034604e25078e293d7b181fa23b3f2f6";
+const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+const ROUTER_ABI = parseAbi([
+  "function routePayment(bytes16 vendorId, uint256 productId, bytes16 affiliateId, address buyer, uint256 maxPrice) external",
+]);
+const USDC_ABI = parseAbi([
+  "function approve(address spender, uint256 amount) external returns (bool)",
+]);
+// Paths with registered Pyrimid product IDs — other paths fall back to standard x402
+const PYRIMID_PRODUCTS = {
+  "/api/kronos/signals":  { productId: 1n, priceUsdc: 50000n },
+  "/api/kronos/decision": { productId: 2n, priceUsdc: 150000n },
+};
+const IMAGEGEN_URL = "https://imagegen.coinopai.com";
+const PYRIMID_PRODUCTS_IMAGEGEN = {
+  "/generate": { productId: 3n, priceUsdc: 100000n },
+};
 
 const TOOLS = [
   {
@@ -43,7 +65,12 @@ const TOOLS = [
   {
     name: "get_crypto_signals",
     description: "Latest hourly directional signals for BTC, ETH, SOL, XRP, ADA from the Kronos model. Positive = bullish, negative = bearish. Costs $0.05 USDC.",
-    inputSchema: { type: "object", properties: {} }
+    inputSchema: {
+      type: "object",
+      properties: {
+        affiliate_id: { type: "string", description: "Optional Pyrimid affiliate ID (af_xxxxx). Affiliate earns a commission from within the listed price — no extra cost to you." }
+      }
+    }
   },
   {
     name: "get_crypto_risk",
@@ -56,7 +83,8 @@ const TOOLS = [
     inputSchema: {
       type: "object",
       properties: {
-        hours: { type: "number", description: "Hours of history to fetch (default 24, max 168)" }
+        hours: { type: "number", description: "Hours of history to fetch (default 24, max 168)" },
+        affiliate_id: { type: "string", description: "Optional Pyrimid affiliate ID (af_xxxxx). Affiliate earns a commission from within the listed price — no extra cost to you." }
       }
     }
   },
@@ -66,7 +94,8 @@ const TOOLS = [
     inputSchema: {
       type: "object",
       properties: {
-        symbol: { type: "string", description: "Symbol to evaluate: BTC, ETH, SOL, XRP, or ADA" }
+        symbol: { type: "string", description: "Symbol to evaluate: BTC, ETH, SOL, XRP, or ADA" },
+        affiliate_id: { type: "string", description: "Optional Pyrimid affiliate ID (af_xxxxx). Affiliate earns a commission from within the listed price — no extra cost to you." }
       },
       required: ["symbol"]
     }
@@ -77,7 +106,8 @@ const TOOLS = [
     inputSchema: {
       type: "object",
       properties: {
-        symbol: { type: "string", description: "Symbol to check: BTC, ETH, SOL, XRP, or ADA" }
+        symbol: { type: "string", description: "Symbol to check: BTC, ETH, SOL, XRP, or ADA" },
+        affiliate_id: { type: "string", description: "Optional Pyrimid affiliate ID (af_xxxxx). Affiliate earns a commission from within the listed price — no extra cost to you." }
       },
       required: ["symbol"]
     }
@@ -89,7 +119,8 @@ const TOOLS = [
       type: "object",
       properties: {
         decision_id: { type: "string", description: "UUID from a previous get_crypto_decision call" },
-        window: { type: "string", description: "Evaluation window: 1h, 4h, or 24h (default: 4h)" }
+        window: { type: "string", description: "Evaluation window: 1h, 4h, or 24h (default: 4h)" },
+        affiliate_id: { type: "string", description: "Optional Pyrimid affiliate ID (af_xxxxx). Affiliate earns a commission from within the listed price — no extra cost to you." }
       },
       required: ["decision_id"]
     }
@@ -99,28 +130,71 @@ const TOOLS = [
 function buildHttpClient() {
   const key = process.env.WALLET_PRIVATE_KEY;
   if (!key) throw new Error("WALLET_PRIVATE_KEY required — set a Base wallet private key with USDC funded");
-
   const pk = key.startsWith("0x") ? key : "0x" + key;
   const account = privateKeyToAccount(pk);
   const signer = toClientEvmSigner(account);
-  const coreClient = new x402Client().register("eip155:*", new ExactEvmScheme(signer));
-  return new x402HTTPClient(coreClient);
+  const coreClient = registerExactEvmScheme(new x402Client(), { signer });
+  return { httpClient: new x402HTTPClient(coreClient), account };
 }
 
-async function call(httpClient, path) {
-  const url = BASE_URL + path;
-  const res = await fetch(url);
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+// Pyrimid affiliate flow — approve + routePayment on-chain, then retry with tx hash
+async function callPyrimid(account, path, affiliateId, baseUrl, products) {
+  const product = products[path];
+  if (!product) throw new Error(`No Pyrimid product registered for ${path}`);
+  const url = baseUrl + path;
+  const transport = http();
+  const publicClient = createPublicClient({ chain: base, transport });
+  const walletClient = createWalletClient({ account, chain: base, transport });
+
+  const approveHash = await walletClient.writeContract({
+    address: USDC_ADDRESS, abi: USDC_ABI,
+    functionName: "approve", args: [PYRIMID_ROUTER, product.priceUsdc],
+  });
+  await publicClient.waitForTransactionReceipt({ hash: approveHash });
+  await sleep(3000);
+
+  const routeHash = await walletClient.writeContract({
+    address: PYRIMID_ROUTER, abi: ROUTER_ABI,
+    functionName: "routePayment",
+    args: [PYRIMID_VENDOR_ID, product.productId, "0x00000000000000000000000000000000", account.address, product.priceUsdc],
+  });
+  await publicClient.waitForTransactionReceipt({ hash: routeHash });
+  await sleep(3000);
+
+  const paidRes = await fetch(url, { headers: { "X-Affiliate-ID": affiliateId, "X-Payment": routeHash } });
+  if (!paidRes.ok) {
+    const err = await paidRes.text().catch(() => paidRes.statusText);
+    throw new Error(`Pyrimid retry failed: ${paidRes.status} ${err.slice(0, 200)}`);
+  }
+  return paidRes.json();
+}
+
+async function callPaid(ctx, path, affiliateId, opts = {}) {
+  const { httpClient, account } = ctx;
+  const baseUrl = opts.baseUrl || BASE_URL;
+  const pyrimidProducts = opts.pyrimidProducts || PYRIMID_PRODUCTS;
+
+  // Use Pyrimid affiliate flow when affiliate_id present and product is registered
+  if (affiliateId && pyrimidProducts[path]) {
+    return callPyrimid(account, path, affiliateId, baseUrl, pyrimidProducts);
+  }
+
+  // Standard x402 EIP-3009 flow
+  const url = baseUrl + path;
+  const extraHeaders = affiliateId ? { "X-Affiliate-ID": affiliateId } : {};
+  const res = await fetch(url, { headers: extraHeaders });
 
   if (res.status === 402) {
     let body;
     try { body = await res.clone().json(); } catch (_) {}
     const paymentRequired = httpClient.getPaymentRequiredResponse(
-      (name) => res.headers.get(name),
-      body
+      (name) => res.headers.get(name), body
     );
     const paymentPayload = await httpClient.createPaymentPayload(paymentRequired);
     const paidRes = await fetch(url, {
-      headers: httpClient.encodePaymentSignatureHeader(paymentPayload),
+      headers: { ...httpClient.encodePaymentSignatureHeader(paymentPayload), ...extraHeaders },
     });
     if (!paidRes.ok) {
       const errBody = await paidRes.text().catch(() => paidRes.statusText);
@@ -137,16 +211,16 @@ async function call(httpClient, path) {
 }
 
 async function main() {
-  let httpClient;
+  let ctx;
   try {
-    httpClient = buildHttpClient();
+    ctx = buildHttpClient();
   } catch (e) {
     process.stderr.write("[coinopai-mcp] " + e.message + "\n");
     process.exit(1);
   }
 
   const server = new Server(
-    { name: "coinopai-mcp", version: "1.0.5" },
+    { name: "coinopai-mcp", version: "1.2.0" },
     { capabilities: { tools: {} } }
   );
 
@@ -155,34 +229,38 @@ async function main() {
   server.setRequestHandler(CallToolRequestSchema, async (req) => {
     const { name, arguments: args } = req.params;
     try {
+      // Affiliate ID: tool arg takes precedence, then env fallback, then none
+      const affiliateId = args.affiliate_id || process.env.PYRIMID_AFFILIATE_ID || null;
       let data;
       switch (name) {
+        // Low-value utility endpoints — no affiliate routing
         case "search_agent_automations":
-          data = await call(httpClient, `/api/search?q=${encodeURIComponent(args.query || "")}&limit=${args.limit || 20}`);
+          data = await callPaid(ctx, `/api/search?q=${encodeURIComponent(args.query || "")}&limit=${args.limit || 20}`, null);
           break;
         case "get_agent_automation":
-          data = await call(httpClient, `/api/automation/${encodeURIComponent(args.slug)}`);
+          data = await callPaid(ctx, `/api/automation/${encodeURIComponent(args.slug)}`, null);
           break;
         case "list_automation_categories":
-          data = await call(httpClient, "/api/categories");
-          break;
-        case "get_crypto_signals":
-          data = await call(httpClient, "/api/kronos/signals");
+          data = await callPaid(ctx, "/api/categories", null);
           break;
         case "get_crypto_risk":
-          data = await call(httpClient, "/api/kronos/risk");
+          data = await callPaid(ctx, "/api/kronos/risk", null);
+          break;
+        // High-value endpoints — affiliate routing enabled
+        case "get_crypto_signals":
+          data = await callPaid(ctx, "/api/kronos/signals", affiliateId);
           break;
         case "get_crypto_signal_history":
-          data = await call(httpClient, `/api/kronos/history?hours=${args.hours || 24}`);
+          data = await callPaid(ctx, `/api/kronos/history?hours=${args.hours || 24}`, affiliateId);
           break;
         case "get_crypto_decision":
-          data = await call(httpClient, `/api/kronos/decision?symbol=${encodeURIComponent(args.symbol || "BTC")}`);
+          data = await callPaid(ctx, `/api/kronos/decision?symbol=${encodeURIComponent(args.symbol || "BTC")}`, affiliateId);
           break;
         case "check_trade_preflight":
-          data = await call(httpClient, `/api/kronos/preflight?symbol=${encodeURIComponent(args.symbol || "BTC")}`);
+          data = await callPaid(ctx, `/api/kronos/preflight?symbol=${encodeURIComponent(args.symbol || "BTC")}`, affiliateId);
           break;
         case "audit_trade_decision":
-          data = await call(httpClient, `/api/kronos/audit?decision_id=${encodeURIComponent(args.decision_id)}&window=${encodeURIComponent(args.window || "4h")}`);
+          data = await callPaid(ctx, `/api/kronos/audit?decision_id=${encodeURIComponent(args.decision_id)}&window=${encodeURIComponent(args.window || "4h")}`, affiliateId);
           break;
         default:
           throw new Error("Unknown tool: " + name);

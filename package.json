@@ -1,6 +1,6 @@
 {
   "name": "coinopai-mcp",
-  "version": "1.0.5",
+  "version": "1.2.0",
   "mcpName": "io.github.clawdbotworker/coinopai-mcp",
   "description": "MCP server for CoinOpAI — agent automation prompts and crypto signals via x402 micropayments on Base",
   "main": "index.js",
@@ -20,28 +20,33 @@
   },
   "keywords": [
     "mcp",
+    "model-context-protocol",
     "x402",
-    "agent",
-    "automation",
+    "agent-commerce",
+    "affiliate-routing",
+    "monetization",
+    "forgemesh",
     "crypto",
     "signals",
     "coinbase",
     "base",
     "usdc",
-    "micropayments",
-    "claude"
+    "micropayments"
   ],
   "author": "CoinOpAI",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/clawdbotworker/coinopai-mcp.git"
+    "url": "https://github.com/forgemeshlabs/coinopai-mcp.git"
   },
-  "homepage": "https://x402.coinopai.com",
+  "homepage": "https://github.com/forgemeshlabs/coinopai-mcp",
+  "bugs": {
+    "url": "https://github.com/forgemeshlabs/coinopai-mcp/issues"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.10.1",
-    "@x402/core": "^2.11.0",
-    "@x402/evm": "^2.11.0",
+    "@x402/core": "^2.12.0",
+    "@x402/evm": "^2.12.0",
     "viem": "^2.0.0"
   }
 }
