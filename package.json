@@ -1,7 +1,7 @@
 {
   "name": "coinopai-mcp",
   "version": "1.2.0",
-  "mcpName": "io.github.clawdbotworker/coinopai-mcp",
+  "mcpName": "io.github.forgemeshlabs/coinopai-mcp",
   "description": "MCP server for CoinOpAI — agent automation prompts and crypto signals via x402 micropayments on Base",
   "main": "index.js",
   "bin": {
