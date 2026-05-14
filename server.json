@@ -1,12 +1,12 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.clawdbotworker/coinopai-mcp",
+  "name": "io.github.forgemeshlabs/coinopai-mcp",
   "description": "Local stdio MCP server for x402-powered crypto intelligence and automation search on Base.",
   "repository": {
-    "url": "https://github.com/clawdbotworker/coinopai-mcp",
+    "url": "https://github.com/forgemeshlabs/coinopai-mcp",
     "source": "github"
   },
-  "version": "1.0.5",
+  "version": "1.2.0",
   "packages": [
     {
       "registryType": "npm",
