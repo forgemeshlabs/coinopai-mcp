@@ -6,12 +6,12 @@
     "url": "https://github.com/forgemeshlabs/coinopai-mcp",
     "source": "github"
   },
-  "version": "1.2.0",
+  "version": "1.2.1",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "coinopai-mcp",
-      "version": "1.0.5",
+      "version": "1.2.1",
       "transport": {
         "type": "stdio"
       },
