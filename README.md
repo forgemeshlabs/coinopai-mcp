@@ -9,6 +9,8 @@
 
 **Paid decision infrastructure for autonomous agents.**
 
+**Source:** https://github.com/forgemeshlabs/coinopai-mcp
+
 An MCP server that charges AI agents per verified intelligence request — using [x402](https://x402.org) micropayments on Base. Every decision gets a `decision_id`. Every `decision_id` can be audited against real prices.
 
 > This repo is the MCP client layer; paid intelligence is served from hosted CoinOpAI x402 endpoints.
@@ -171,7 +173,11 @@ Add to your Claude Desktop config (`claude_desktop_config.json`):
 
 ### Smithery
 
-Install via [Smithery](https://smithery.ai/server/coinopai-mcp). Configure a dedicated low-balance payment wallet. Do not use your primary wallet.
+Not currently listed on Smithery. Use the `npx` install flow shown above until a verified public listing is live.
+
+### Registry status
+
+The current official MCP Registry entry remains `io.github.clawdbotworker/coinopai-mcp` until a refreshed public submission is published.
 
 ---
 
@@ -300,7 +306,7 @@ Decision outputs are probabilistic signals for experimental automated workflows 
 
 ---
 
-## Part of the [ForgeMesh](https://github.com/forgemeshlabs/forgemesh) Ecosystem
+## Part of the ForgeMesh Ecosystem
 
 Infrastructure for monetized agent ecosystems.
 
@@ -308,7 +314,7 @@ Infrastructure for monetized agent ecosystems.
 |---------|------|---------|
 | [affiliate-router-mcp](https://github.com/forgemeshlabs/affiliate-router-mcp) | Vendor-neutral monetization routing | `npm i affiliate-router-mcp` |
 | **coinopai-mcp** | Paid crypto intelligence (this package) | `npm i coinopai-mcp` |
-| [coinopai-imagegen](https://github.com/forgemeshlabs/coinopai-imagegen) | Paid image generation service | — |
+| [coinopai-imagegen](https://github.com/forgemeshlabs/coinopai-imagegen) | Paid image generation service | `npm i coinopai-imagegen` |
 
 Each package works standalone. No shared dependency required.
 
