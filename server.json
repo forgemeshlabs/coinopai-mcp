@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.clawdbotworker/coinopai-mcp",
-  "description": "Local stdio MCP server for x402-powered crypto intelligence and automation search on Base.",
+  "description": "9 paid tools for AI agents: Kronos crypto signals, probabilistic trade decisions, verifiable audit loop, and 819 agent automation prompts. Payments settle automatically in USDC on Base mainnet via x402 — $0.005–$0.15 per call. No API key.",
   "repository": {
     "url": "https://github.com/forgemeshlabs/coinopai-mcp",
     "source": "github"
