@@ -25,7 +25,11 @@ audit-capture.js
 
 # Claude Code internals
 .claude/
+.playwright-mcp/
 CLAUDE.md
+AGENTS.md
+*AGENT*.md
+*agent*.md
 
 # OS
 .DS_Store
@@ -35,3 +39,9 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# Local visual audit artifacts
+*.png
+*.jpg
+*.jpeg
+*.webp

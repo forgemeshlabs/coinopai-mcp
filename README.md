@@ -177,7 +177,7 @@ Not currently listed on Smithery. Use the `npx` install flow shown above until a
 
 ### Registry status
 
-The current official MCP Registry entry remains `io.github.clawdbotworker/coinopai-mcp` until a refreshed public submission is published.
+Prepared MCP Registry identity: `io.github.forgemeshlabs/coinopai-mcp`. Refresh the public directory submission after publishing this package so old `clawdbotworker` entries stop being canonical.
 
 ---
 
@@ -314,7 +314,7 @@ Infrastructure for monetized agent ecosystems.
 |---------|------|---------|
 | [affiliate-router-mcp](https://github.com/forgemeshlabs/affiliate-router-mcp) | Vendor-neutral monetization routing | `npm i affiliate-router-mcp` |
 | **coinopai-mcp** | Paid crypto intelligence (this package) | `npm i coinopai-mcp` |
-| [coinopai-imagegen](https://github.com/forgemeshlabs/coinopai-imagegen) | Paid image generation service | `npm i coinopai-imagegen` |
+| [forgemesh-imagegen](https://github.com/forgemeshlabs/imagegen-mcp) | Paid image generation MCP | `npm i forgemesh-imagegen` |
 
 Each package works standalone. No shared dependency required.
 
