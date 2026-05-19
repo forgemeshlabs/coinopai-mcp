@@ -1,6 +1,6 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.clawdbotworker/coinopai-mcp",
+  "name": "io.github.forgemeshlabs/coinopai-mcp",
   "description": "Kronos crypto signals + trade decisions + 819 automation prompts. x402 micropayments, USDC/Base.",
   "repository": {
     "url": "https://github.com/forgemeshlabs/coinopai-mcp",

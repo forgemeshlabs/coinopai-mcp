@@ -25,8 +25,10 @@ const USDC_ABI = parseAbi([
 ]);
 // Paths with registered Pyrimid product IDs — other paths fall back to standard x402
 const PYRIMID_PRODUCTS = {
-  "/api/kronos/signals":  { productId: 1n, priceUsdc: 50000n },
-  "/api/kronos/decision": { productId: 2n, priceUsdc: 150000n },
+  "/api/kronos/signals":   { productId: 1n, priceUsdc: 50000n },
+  "/api/kronos/decision":  { productId: 2n, priceUsdc: 150000n },
+  "/api/kronos/preflight": { productId: 4n, priceUsdc: 50000n },
+  "/api/kronos/audit":     { productId: 5n, priceUsdc: 70000n },
 };
 const IMAGEGEN_URL = "https://imagegen.coinopai.com";
 const PYRIMID_PRODUCTS_IMAGEGEN = {
@@ -141,8 +143,9 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 // Pyrimid affiliate flow — approve + routePayment on-chain, then retry with tx hash
 async function callPyrimid(account, path, affiliateId, baseUrl, products) {
-  const product = products[path];
-  if (!product) throw new Error(`No Pyrimid product registered for ${path}`);
+  const pathname = new URL(path, baseUrl).pathname;
+  const product = products[pathname];
+  if (!product) throw new Error(`No Pyrimid product registered for ${pathname}`);
   const url = baseUrl + path;
   const transport = http();
   const publicClient = createPublicClient({ chain: base, transport });
@@ -175,10 +178,16 @@ async function callPaid(ctx, path, affiliateId, opts = {}) {
   const { httpClient, account } = ctx;
   const baseUrl = opts.baseUrl || BASE_URL;
   const pyrimidProducts = opts.pyrimidProducts || PYRIMID_PRODUCTS;
+  const pathname = new URL(path, baseUrl).pathname;
 
-  // Use Pyrimid affiliate flow when affiliate_id present and product is registered
-  if (affiliateId && pyrimidProducts[path]) {
-    return callPyrimid(account, path, affiliateId, baseUrl, pyrimidProducts);
+  // Use Pyrimid affiliate flow when affiliate_id present and product is registered.
+  // Fall back to direct x402 if the affiliate route is unavailable or not yet cataloged.
+  if (affiliateId && pyrimidProducts[pathname]) {
+    try {
+      return await callPyrimid(account, path, affiliateId, baseUrl, pyrimidProducts);
+    } catch (_) {
+      affiliateId = null;
+    }
   }
 
   // Standard x402 EIP-3009 flow
@@ -220,7 +229,7 @@ async function main() {
   }
 
   const server = new Server(
-    { name: "coinopai-mcp", version: "1.2.1" },
+    { name: "coinopai-mcp", version: "1.2.4" },
     { capabilities: { tools: {} } }
   );
 
