@@ -17,6 +17,7 @@ REPLY-SCRIPTS.md
 CONTEXT.md
 REFERENCES.md
 STATE.md
+RELEASE_STATE.md
 
 # Internal test/dev scripts
 test-all.js
