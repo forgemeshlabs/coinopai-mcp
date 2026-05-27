@@ -25,10 +25,12 @@ const USDC_ABI = parseAbi([
 ]);
 // Paths with registered Pyrimid product IDs — other paths fall back to standard x402
 const PYRIMID_PRODUCTS = {
-  "/api/kronos/signals":   { productId: 1n, priceUsdc: 50000n },
+  "/api/kronos/signals":   { productId: 1n, priceUsdc:  50000n },
   "/api/kronos/decision":  { productId: 2n, priceUsdc: 150000n },
-  "/api/kronos/preflight": { productId: 4n, priceUsdc: 50000n },
-  "/api/kronos/audit":     { productId: 5n, priceUsdc: 70000n },
+  "/api/kronos/preflight": { productId: 4n, priceUsdc:  50000n },
+  "/api/kronos/audit":     { productId: 5n, priceUsdc:  70000n },
+  "/api/kronos/risk":      { productId: 6n, priceUsdc:  20000n },
+  "/api/kronos/history":   { productId: 7n, priceUsdc:  50000n },
 };
 const IMAGEGEN_URL = "https://imagegen.coinopai.com";
 const PYRIMID_PRODUCTS_IMAGEGEN = {
@@ -227,7 +229,7 @@ async function main() {
   }
 
   const server = new Server(
-    { name: "coinopai-mcp", version: "1.2.5" },
+    { name: "coinopai-mcp", version: "1.2.6" },
     { capabilities: { tools: {} } }
   );
 
@@ -252,7 +254,7 @@ async function main() {
           data = await callPaid(paymentContext, "/api/categories", null);
           break;
         case "get_crypto_risk":
-          data = await callPaid(paymentContext, "/api/kronos/risk", null);
+          data = await callPaid(paymentContext, "/api/kronos/risk", affiliateId);
           break;
         // High-value endpoints — affiliate routing enabled
         case "get_crypto_signals":
