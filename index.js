@@ -221,11 +221,9 @@ async function callPaid(ctx, path, affiliateId, opts = {}) {
 
 async function main() {
   let ctx;
-  try {
-    ctx = buildHttpClient();
-  } catch (e) {
-    process.stderr.write("[coinopai-mcp] " + e.message + "\n");
-    process.exit(1);
+  function getPaymentContext() {
+    if (!ctx) ctx = buildHttpClient();
+    return ctx;
   }
 
   const server = new Server(
@@ -240,36 +238,37 @@ async function main() {
     try {
       // Affiliate ID: tool arg takes precedence, then env fallback, then none
       const affiliateId = args.affiliate_id || process.env.PYRIMID_AFFILIATE_ID || null;
+      const paymentContext = getPaymentContext();
       let data;
       switch (name) {
         // Low-value utility endpoints — no affiliate routing
         case "search_agent_automations":
-          data = await callPaid(ctx, `/api/search?q=${encodeURIComponent(args.query || "")}&limit=${args.limit || 20}`, null);
+          data = await callPaid(paymentContext, `/api/search?q=${encodeURIComponent(args.query || "")}&limit=${args.limit || 20}`, null);
           break;
         case "get_agent_automation":
-          data = await callPaid(ctx, `/api/automation/${encodeURIComponent(args.slug)}`, null);
+          data = await callPaid(paymentContext, `/api/automation/${encodeURIComponent(args.slug)}`, null);
           break;
         case "list_automation_categories":
-          data = await callPaid(ctx, "/api/categories", null);
+          data = await callPaid(paymentContext, "/api/categories", null);
           break;
         case "get_crypto_risk":
-          data = await callPaid(ctx, "/api/kronos/risk", null);
+          data = await callPaid(paymentContext, "/api/kronos/risk", null);
           break;
         // High-value endpoints — affiliate routing enabled
         case "get_crypto_signals":
-          data = await callPaid(ctx, "/api/kronos/signals", affiliateId);
+          data = await callPaid(paymentContext, "/api/kronos/signals", affiliateId);
           break;
         case "get_crypto_signal_history":
-          data = await callPaid(ctx, `/api/kronos/history?hours=${args.hours || 24}`, affiliateId);
+          data = await callPaid(paymentContext, `/api/kronos/history?hours=${args.hours || 24}`, affiliateId);
           break;
         case "get_crypto_decision":
-          data = await callPaid(ctx, `/api/kronos/decision?symbol=${encodeURIComponent(args.symbol || "BTC")}`, affiliateId);
+          data = await callPaid(paymentContext, `/api/kronos/decision?symbol=${encodeURIComponent(args.symbol || "BTC")}`, affiliateId);
           break;
         case "check_trade_preflight":
-          data = await callPaid(ctx, `/api/kronos/preflight?symbol=${encodeURIComponent(args.symbol || "BTC")}`, affiliateId);
+          data = await callPaid(paymentContext, `/api/kronos/preflight?symbol=${encodeURIComponent(args.symbol || "BTC")}`, affiliateId);
           break;
         case "audit_trade_decision":
-          data = await callPaid(ctx, `/api/kronos/audit?decision_id=${encodeURIComponent(args.decision_id)}&window=${encodeURIComponent(args.window || "4h")}`, affiliateId);
+          data = await callPaid(paymentContext, `/api/kronos/audit?decision_id=${encodeURIComponent(args.decision_id)}&window=${encodeURIComponent(args.window || "4h")}`, affiliateId);
           break;
         default:
           throw new Error("Unknown tool: " + name);
@@ -282,6 +281,9 @@ async function main() {
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
+  process.stdin.resume();
+  process.stdin.on("end", () => process.exit(0));
+  setInterval(() => {}, 1 << 30);
 }
 
 main();
