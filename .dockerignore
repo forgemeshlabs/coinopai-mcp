@@ -1,0 +1,11 @@
+node_modules
+.git
+.claude
+.playwright-mcp
+*.png
+HANDOFF.md
+MARKETING-CONTENT.md
+REPLY-SCRIPTS.md
+STATE.md
+test-*.js
+audit-capture.js
