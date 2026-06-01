@@ -7,15 +7,27 @@
 [![payments](https://img.shields.io/badge/payments-x402%20USDC-0052FF)](https://x402.org)
 [![network](https://img.shields.io/badge/network-Base-0052FF)](https://base.org)
 
-**Paid decision infrastructure for autonomous agents.**
+**Directional market intelligence with built-in outcome verification.**
 
 **Source:** https://github.com/forgemeshlabs/coinopai-mcp
 
-An MCP server that charges AI agents per verified intelligence request — using [x402](https://x402.org) micropayments on Base. Every decision gets a `decision_id`. Every `decision_id` can be audited against real prices.
+An MCP server that lets AI agents buy Kronos market intelligence with [x402](https://x402.org) micropayments on Base. Kronos does not just generate signals: every decision gets a `decision_id`, and every `decision_id` can be audited against later market prices.
 
 > This repo is the MCP client layer; paid intelligence is served from hosted CoinOpAI x402 endpoints.
 
 > Wrong predictions are shown too. That's the point.
+
+## Why Kronos Is Different
+
+Most signal APIs stop after making a prediction. Kronos assigns a `decision_id` and lets every decision be audited against future market behavior.
+
+The moat is the verification loop:
+
+```
+preflight -> decision -> audit
+```
+
+Trust the process less. Verify the record more.
 
 ---
 
@@ -62,6 +74,32 @@ check_trade_preflight  ──→  get_crypto_decision  ──→  [wait 1h]  ─
 ```
 
 Every decision is self-verifying. The `decision_id` links the prediction to the outcome. The audit fetches real market prices and produces a verdict. Nothing is hidden.
+
+## Current Status
+
+**Live**
+- Signals
+- Risk assessment
+- Decision guidance
+- Outcome verification
+
+**Research**
+- Forecast intelligence: validation in progress
+- Forecast vs execution agreement analysis: collecting evidence
+
+Forecast outputs are not exposed publicly. Validation comes first.
+
+## Signal Scale
+
+| Signal | Meaning |
+|--------|---------|
+| Positive | Bullish directional read |
+| Negative | Bearish directional read |
+| 0.00-0.01 | Weak magnitude |
+| 0.01-0.03 | Moderate magnitude |
+| 0.03+ | Strong magnitude |
+
+Signals are probabilistic model outputs, not guarantees or human recommendations.
 
 ---
 
@@ -120,9 +158,9 @@ It gets some right. It gets some wrong. The loop makes both visible.
 | `check_trade_preflight` | Gate check: market allowed, cooldown, regime, signal strength | $0.05 | ✓ |
 | `get_crypto_decision` | CONSIDER\_LONG/SHORT/NO\_ACTION + `decision_id` | $0.15 | ✓ |
 | `audit_trade_decision` | Verify against real prices: verdict + PnL% | $0.07 | ✓ |
-| `get_crypto_signals` | Live directional signals for BTC, ETH, SOL, XRP, ADA | $0.05 | ✓ |
-| `get_crypto_signal_history` | Up to 168h of signal history | $0.05 | ✓ |
-| `get_crypto_risk` | Market risk state + regime detection | $0.02 | — |
+| `get_crypto_signals` | Directional market intelligence for BTC, ETH, SOL, XRP, ADA | $0.05 | ✓ |
+| `get_crypto_signal_history` | Up to 168h of signal history for analysis | $0.05 | ✓ |
+| `get_crypto_risk` | Market risk state and cooldown context | $0.02 | — |
 | `search_agent_automations` | Search 819 agent automation prompts | $0.01 | — |
 | `get_agent_automation` | Full prompt + workflow steps by slug | $0.01 | — |
 | `list_automation_categories` | All 35 automation categories with counts | $0.005 | — |
