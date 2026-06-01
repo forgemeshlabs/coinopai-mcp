@@ -68,7 +68,7 @@ const TOOLS = [
   },
   {
     name: "get_crypto_signals",
-    description: "Latest hourly directional signals for BTC, ETH, SOL, XRP, ADA from the Kronos model. Positive = bullish, negative = bearish. Costs $0.05 USDC.",
+    description: "Latest Kronos directional market intelligence for BTC, ETH, SOL, XRP, ADA. Positive = bullish, negative = bearish; magnitude under 0.01 is weak, 0.01-0.03 moderate, 0.03+ strong. Costs $0.05 USDC.",
     inputSchema: {
       type: "object",
       properties: {
@@ -78,12 +78,12 @@ const TOOLS = [
   },
   {
     name: "get_crypto_risk",
-    description: "Current crypto market risk state (NORMAL/ELEVATED/HIGH), regime detection, equity tracking, signal streaks. Costs $0.02 USDC.",
+    description: "Current market risk state and cooldown context for Kronos decisions. Useful as supporting context, not a standalone trading command. Costs $0.02 USDC.",
     inputSchema: { type: "object", properties: {} }
   },
   {
     name: "get_crypto_signal_history",
-    description: "Historical 15-minute crypto signals from Kronos — up to 168 hours of BTC/ETH/SOL/XRP/ADA data. Costs $0.05 USDC.",
+    description: "Recent Kronos signal history for BTC/ETH/SOL/XRP/ADA. Use it to inspect directional context before or after a decision. Costs $0.05 USDC.",
     inputSchema: {
       type: "object",
       properties: {
@@ -94,7 +94,7 @@ const TOOLS = [
   },
   {
     name: "get_crypto_decision",
-    description: "Get a probabilistic trade decision from Kronos — then verify it. Returns CONSIDER_LONG/SHORT/NO_ACTION with confidence, regime, and a decision_id. Call audit_trade_decision with that ID after 1h to see if the decision was right. Full loop: preflight ($0.05) → decision ($0.15) → audit ($0.07) = $0.27 per verified cycle. Costs $0.15 USDC.",
+    description: "Get probabilistic decision guidance from Kronos, then verify it. Returns CONSIDER_LONG/SHORT/NO_ACTION with confidence, regime, and a decision_id. Call audit_trade_decision with that ID after the evaluation window to see whether the direction held. Costs $0.15 USDC.",
     inputSchema: {
       type: "object",
       properties: {
@@ -106,7 +106,7 @@ const TOOLS = [
   },
   {
     name: "check_trade_preflight",
-    description: "Step 1 of the trade loop — checks if conditions allow a trade. Returns allowed:true/false, market state, cooldown, signal strength, warnings. If allowed, proceed to get_crypto_decision. Costs $0.05 USDC.",
+    description: "Step 1 of the verified decision loop. Checks market state, cooldown, data freshness, and signal strength before calling get_crypto_decision. Costs $0.05 USDC.",
     inputSchema: {
       type: "object",
       properties: {
@@ -118,7 +118,7 @@ const TOOLS = [
   },
   {
     name: "audit_trade_decision",
-    description: "The accountability step — verify any decision against real prices. Pass the decision_id from get_crypto_decision and a window (1h/4h/24h). Returns: did the direction hold? What was the PnL%? Verdict: GOOD_DECISION, BAD_DIRECTION, or NOISE. Every decision should be audited. Costs $0.07 USDC.",
+    description: "The accountability step. Verify a Kronos decision_id against later market prices. Returns whether direction held, PnL%, and a verdict: GOOD_DECISION, BAD_DIRECTION, NOISE, or NO_ACTION_TAKEN. Costs $0.07 USDC.",
     inputSchema: {
       type: "object",
       properties: {
