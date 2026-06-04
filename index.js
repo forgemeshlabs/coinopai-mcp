@@ -128,6 +128,17 @@ const TOOLS = [
       },
       required: ["decision_id"]
     }
+  },
+  {
+    name: "get_crypto_forecast",
+    description: "Conformally-calibrated price forecast: an honest 80% prediction interval (range_80, ~0.80 empirical coverage) plus point return and upside probability for BTC/ETH/SOL/XRP/ADA. The directional point has no demonstrated backtest edge (~51% accurate) — the calibrated range is the validated product. Costs $0.05 USDC.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        symbol: { type: "string", description: "Symbol: BTC, ETH, SOL, XRP, ADA (default: BTC)" },
+        affiliate_id: { type: "string", description: "Optional Pyrimid affiliate ID (af_xxxxx). Affiliate earns a commission from within the listed price — no extra cost to you." }
+      }
+    }
   }
 ];
 
@@ -229,7 +240,7 @@ async function main() {
   }
 
   const server = new Server(
-    { name: "coinopai-mcp", version: "1.2.6" },
+    { name: "coinopai-mcp", version: "1.2.7" },
     { capabilities: { tools: {} } }
   );
 
@@ -271,6 +282,9 @@ async function main() {
           break;
         case "audit_trade_decision":
           data = await callPaid(paymentContext, `/api/kronos/audit?decision_id=${encodeURIComponent(args.decision_id)}&window=${encodeURIComponent(args.window || "4h")}`, affiliateId);
+          break;
+        case "get_crypto_forecast":
+          data = await callPaid(paymentContext, `/api/kronos/forecast?symbol=${encodeURIComponent(args.symbol || "BTC")}`, affiliateId);
           break;
         default:
           throw new Error("Unknown tool: " + name);
