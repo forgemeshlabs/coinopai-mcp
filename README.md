@@ -82,12 +82,13 @@ Every decision is self-verifying. The `decision_id` links the prediction to the 
 - Risk assessment
 - Decision guidance
 - Outcome verification
+- Forecast: conformally-calibrated 80% price range (~0.80 empirical coverage)
 
 **Research**
-- Forecast intelligence: validation in progress
+- Directional edge: none demonstrated in backtest (~51% accurate) — the calibrated range is the validated product, not the direction
 - Forecast vs execution agreement analysis: collecting evidence
 
-Forecast outputs are not exposed publicly. Validation comes first.
+The calibrated forecast range is live and validated (conformal, ~0.80 coverage). The directional point estimate remains a weak input only — verify everything via the audit loop.
 
 ## Signal Scale
 
@@ -160,6 +161,7 @@ It gets some right. It gets some wrong. The loop makes both visible.
 | `audit_trade_decision` | Verify against real prices: verdict + PnL% | $0.07 | ✓ |
 | `get_crypto_signals` | Directional market intelligence for BTC, ETH, SOL, XRP, ADA | $0.05 | ✓ |
 | `get_crypto_signal_history` | Up to 168h of signal history for analysis | $0.05 | ✓ |
+| `get_crypto_forecast` | Conformally-calibrated 80% price range (~0.80 empirical coverage) for BTC, ETH, SOL, XRP, ADA | $0.05 | ✓ |
 | `get_crypto_risk` | Market risk state and cooldown context | $0.02 | — |
 | `search_agent_automations` | Search 819 agent automation prompts | $0.01 | — |
 | `get_agent_automation` | Full prompt + workflow steps by slug | $0.01 | — |
@@ -189,7 +191,7 @@ Add to `~/.claude/settings.json`:
 }
 ```
 
-Restart Claude Code. The 9 tools appear automatically.
+Restart Claude Code. The 10 tools appear automatically.
 
 ### Claude Desktop
 
