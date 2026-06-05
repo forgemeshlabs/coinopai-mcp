@@ -240,7 +240,7 @@ async function main() {
   }
 
   const server = new Server(
-    { name: "coinopai-mcp", version: "1.2.7" },
+    { name: "coinopai-mcp", version: "1.2.8" },
     { capabilities: { tools: {} } }
   );
 
