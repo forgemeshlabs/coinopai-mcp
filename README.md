@@ -88,7 +88,7 @@ Every decision is self-verifying. The `decision_id` links the setup to the outco
 - Directional edge: none demonstrated in backtest (~51% accurate) — the calibrated range is the validated product, not the direction
 - Forecast vs execution agreement analysis: collecting evidence
 
-The calibrated forecast range is live and validated (conformal, ~0.80 coverage). The directional point estimate remains a weak input only — verify everything via the audit loop.
+The calibrated forecast range is live and validated (conformal, ~0.80 coverage). Directional values are supporting context, not standalone trade instructions. Use them with the calibrated range, risk state, and audit record.
 
 ## Directional Context
 
@@ -100,7 +100,7 @@ The calibrated forecast range is live and validated (conformal, ~0.80 coverage).
 | 0.01-0.03 | Moderate magnitude |
 | 0.03+ | Strong magnitude |
 
-Directional values are weak probabilistic model context, not guarantees, human recommendations, or demonstrated standalone trade edge. Use the calibrated range, risk state, and audit trail.
+Directional values are supporting context, not guarantees, human recommendations, or standalone trade instructions. Use them with the calibrated range, risk state, and audit record.
 
 ---
 
@@ -338,7 +338,7 @@ Normal x402 flow — CoinOpAI receives 100% of the listed price. Nothing changes
 
 ## Disclaimer
 
-Decision outputs are probabilistic context and journal entries for experimental automated workflows only. Not financial advice. Directional values have no demonstrated standalone edge. Results will vary. Never risk capital you can't afford to lose.
+Decision outputs are probabilistic context and journal entries for experimental automated workflows only. Not financial advice. Directional bias alone has not been validated as a standalone trading strategy. Results will vary. Never risk capital you can't afford to lose.
 
 ---
 

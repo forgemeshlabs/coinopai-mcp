@@ -68,7 +68,7 @@ const TOOLS = [
   },
   {
     name: "get_crypto_signals",
-    description: "Latest Kronos model context for BTC, ETH, SOL, XRP, ADA. Directional values are weak context, not demonstrated trade edge; use forecast ranges, risk state, and audits before acting. Costs $0.05 USDC.",
+    description: "Latest Kronos model context for BTC, ETH, SOL, XRP, ADA. Directional values are supporting context, not standalone trade instructions; use them with the calibrated range, risk state, and audit record. Costs $0.05 USDC.",
     inputSchema: {
       type: "object",
       properties: {
@@ -131,7 +131,7 @@ const TOOLS = [
   },
   {
     name: "get_crypto_forecast",
-    description: "Conformally-calibrated price forecast: an honest 80% prediction interval (range_80, ~0.80 empirical coverage) plus point return and upside probability for BTC/ETH/SOL/XRP/ADA. The directional point has no demonstrated backtest edge (~51% accurate) — the calibrated range is the validated product. Costs $0.05 USDC.",
+    description: "Conformally-calibrated price forecast: an honest 80% prediction interval (range_80, ~0.80 empirical coverage) plus point return and upside probability for BTC/ETH/SOL/XRP/ADA. Directional bias is supporting context; the calibrated range is the validated product. Costs $0.05 USDC.",
     inputSchema: {
       type: "object",
       properties: {
