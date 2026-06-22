@@ -68,7 +68,7 @@ const TOOLS = [
   },
   {
     name: "get_crypto_signals",
-    description: "Latest Kronos directional market intelligence for BTC, ETH, SOL, XRP, ADA. Positive = bullish, negative = bearish; magnitude under 0.01 is weak, 0.01-0.03 moderate, 0.03+ strong. Costs $0.05 USDC.",
+    description: "Latest Kronos model context for BTC, ETH, SOL, XRP, ADA. Directional values are weak context, not demonstrated trade edge; use forecast ranges, risk state, and audits before acting. Costs $0.05 USDC.",
     inputSchema: {
       type: "object",
       properties: {
@@ -83,7 +83,7 @@ const TOOLS = [
   },
   {
     name: "get_crypto_signal_history",
-    description: "Recent Kronos signal history for BTC/ETH/SOL/XRP/ADA. Use it to inspect directional context before or after a decision. Costs $0.05 USDC.",
+    description: "Recent Kronos context history for BTC/ETH/SOL/XRP/ADA. Use it to inspect model context and freshness before or after a decision. Costs $0.05 USDC.",
     inputSchema: {
       type: "object",
       properties: {
@@ -94,7 +94,7 @@ const TOOLS = [
   },
   {
     name: "get_crypto_decision",
-    description: "Get probabilistic decision guidance from Kronos, then verify it. Returns CONSIDER_LONG/SHORT/NO_ACTION with confidence, regime, and a decision_id. Call audit_trade_decision with that ID after the evaluation window to see whether the direction held. Costs $0.15 USDC.",
+    description: "Create a probabilistic decision journal entry from Kronos context, then verify it. Returns CONSIDER_LONG/SHORT/NO_ACTION with confidence, regime, and a decision_id. Call audit_trade_decision with that ID after the evaluation window to see what happened. Costs $0.15 USDC.",
     inputSchema: {
       type: "object",
       properties: {
@@ -106,7 +106,7 @@ const TOOLS = [
   },
   {
     name: "check_trade_preflight",
-    description: "Step 1 of the verified decision loop. Checks market state, cooldown, data freshness, and signal strength before calling get_crypto_decision. Costs $0.05 USDC.",
+    description: "Step 1 of the auditable decision loop. Checks market state, cooldown, data freshness, and model context before calling get_crypto_decision. Costs $0.05 USDC.",
     inputSchema: {
       type: "object",
       properties: {

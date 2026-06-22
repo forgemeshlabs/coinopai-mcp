@@ -7,21 +7,21 @@
 [![payments](https://img.shields.io/badge/payments-x402%20USDC-0052FF)](https://x402.org)
 [![network](https://img.shields.io/badge/network-Base-0052FF)](https://base.org)
 
-**Directional market intelligence with built-in outcome verification.**
+**Auditable market context with calibrated forecast ranges and outcome verification.**
 
 **Source:** https://github.com/forgemeshlabs/coinopai-mcp
 
-An MCP server that lets AI agents buy Kronos market intelligence with [x402](https://x402.org) micropayments on Base. Kronos does not just generate signals: every decision gets a `decision_id`, and every `decision_id` can be audited against later market prices.
+An MCP server that lets AI agents buy Kronos market context with [x402](https://x402.org) micropayments on Base. Kronos is not a buy/sell oracle: it gives agents calibrated ranges, risk context, decision journals, and audit records they can verify.
 
 > This repo is the MCP client layer; paid intelligence is served from hosted CoinOpAI x402 endpoints.
 
-> Wrong predictions are shown too. That's the point.
+> Weak calls and wrong calls are shown too. That's the point.
 
 ## Why Kronos Is Different
 
-Most signal APIs stop after making a prediction. Kronos assigns a `decision_id` and lets every decision be audited against future market behavior.
+Most market APIs stop after returning a direction. Kronos leads with calibrated ranges and risk context, then assigns a `decision_id` so every decision can be audited against future market behavior.
 
-The moat is the verification loop:
+The moat is the audit loop:
 
 ```
 preflight -> decision -> audit
@@ -61,7 +61,7 @@ The agent calls a tool → the MCP server receives an `HTTP 402` → automatical
 
 ---
 
-## The Verified Loop ($0.27/cycle)
+## The Auditable Loop ($0.27/cycle)
 
 ```
 check_trade_preflight  ──→  get_crypto_decision  ──→  [wait 1h]  ──→  audit_trade_decision
@@ -70,17 +70,17 @@ check_trade_preflight  ──→  get_crypto_decision  ──→  [wait 1h]  ─
    Is now allowed?           CONSIDER_LONG/SHORT              GOOD_DECISION
    Cooldown check?           NO_ACTION                        BAD_DIRECTION
    Regime ok?                + decision_id                    NOISE
-   Signal strength?          + next_step hint                 + pnl_pct
+   Model context?            + next_step hint                 + pnl_pct
 ```
 
-Every decision is self-verifying. The `decision_id` links the prediction to the outcome. The audit fetches real market prices and produces a verdict. Nothing is hidden.
+Every decision is self-verifying. The `decision_id` links the setup to the outcome. The audit fetches real market prices and produces a verdict. Nothing is hidden.
 
 ## Current Status
 
 **Live**
-- Signals
+- Model context
 - Risk assessment
-- Decision guidance
+- Decision journaling
 - Outcome verification
 - Forecast: conformally-calibrated 80% price range (~0.80 empirical coverage)
 
@@ -90,17 +90,17 @@ Every decision is self-verifying. The `decision_id` links the prediction to the 
 
 The calibrated forecast range is live and validated (conformal, ~0.80 coverage). The directional point estimate remains a weak input only — verify everything via the audit loop.
 
-## Signal Scale
+## Directional Context
 
-| Signal | Meaning |
+| Value | Meaning |
 |--------|---------|
-| Positive | Bullish directional read |
-| Negative | Bearish directional read |
+| Positive | Bullish model context |
+| Negative | Bearish model context |
 | 0.00-0.01 | Weak magnitude |
 | 0.01-0.03 | Moderate magnitude |
 | 0.03+ | Strong magnitude |
 
-Signals are probabilistic model outputs, not guarantees or human recommendations.
+Directional values are weak probabilistic model context, not guarantees, human recommendations, or demonstrated standalone trade edge. Use the calibrated range, risk state, and audit trail.
 
 ---
 
@@ -112,7 +112,7 @@ Signals are probabilistic model outputs, not guarantees or human recommendations
   "allowed": true,
   "symbol": "BTC/USD",
   "market_state": "NORMAL",
-  "signal_strength": 0.72,
+  "signal_strength": "weak_or_mixed",
   "regime": "TREND",
   "cooldown_remaining_seconds": 0
 }
@@ -123,9 +123,13 @@ Signals are probabilistic model outputs, not guarantees or human recommendations
 {
   "symbol": "BTC/USD",
   "suggested_action": "CONSIDER_LONG",
-  "confidence": 0.72,
+  "confidence": 0.514,
   "regime": "TREND",
   "decision_id": "a3f8c1d2-9472-4dfe-b459-5df17b282614",
+  "directional_edge": "none_demonstrated",
+  "why_not_high": [
+    "Directional confidence is capped by observed historical accuracy, not boosted by signal magnitude."
+  ],
   "next_step": "Call audit_trade_decision with this decision_id after 1h using window=1h"
 }
 ```
@@ -140,15 +144,7 @@ Signals are probabilistic model outputs, not guarantees or human recommendations
 }
 ```
 
-**Live results from real runs:**
-
-| Symbol | Decision | Confidence | 1h Outcome | Verdict |
-|--------|----------|-----------|------------|---------|
-| XRP | SHORT | 1.0 | -0.54% | ✅ GOOD_DECISION |
-| ETH | LONG | 0.68 | -0.32% | ❌ BAD_DIRECTION |
-| BTC | LONG | 0.40 | +0.01% | — NOISE |
-
-It gets some right. It gets some wrong. The loop makes both visible.
+Audit verdicts include `GOOD_DECISION`, `BAD_DIRECTION`, `NOISE`, `NO_ACTION_TAKEN`, and `PENDING`. Kronos gets some right, gets some wrong, and exposes both through the same record.
 
 ---
 
@@ -156,11 +152,11 @@ It gets some right. It gets some wrong. The loop makes both visible.
 
 | Tool | What it does | Cost | Affiliate |
 |------|-------------|------|-----------|
-| `check_trade_preflight` | Gate check: market allowed, cooldown, regime, signal strength | $0.05 | ✓ |
-| `get_crypto_decision` | CONSIDER\_LONG/SHORT/NO\_ACTION + `decision_id` | $0.15 | ✓ |
+| `check_trade_preflight` | Gate check: market allowed, cooldown, regime, model context | $0.05 | ✓ |
+| `get_crypto_decision` | Probabilistic decision journal + `decision_id` | $0.15 | ✓ |
 | `audit_trade_decision` | Verify against real prices: verdict + PnL% | $0.07 | ✓ |
-| `get_crypto_signals` | Directional market intelligence for BTC, ETH, SOL, XRP, ADA | $0.05 | ✓ |
-| `get_crypto_signal_history` | Up to 168h of signal history for analysis | $0.05 | ✓ |
+| `get_crypto_signals` | Model context for BTC, ETH, SOL, XRP, ADA | $0.05 | ✓ |
+| `get_crypto_signal_history` | Up to 168h of context history for analysis | $0.05 | ✓ |
 | `get_crypto_forecast` | Conformally-calibrated 80% price range (~0.80 empirical coverage) for BTC, ETH, SOL, XRP, ADA | $0.05 | ✓ |
 | `get_crypto_risk` | Market risk state and cooldown context | $0.02 | — |
 | `search_agent_automations` | Search 819 agent automation prompts | $0.01 | — |
@@ -342,7 +338,7 @@ Normal x402 flow — CoinOpAI receives 100% of the listed price. Nothing changes
 
 ## Disclaimer
 
-Decision outputs are probabilistic signals for experimental automated workflows only. Not financial advice. Early system with a small sample size. Results will vary. Never risk capital you can't afford to lose.
+Decision outputs are probabilistic context and journal entries for experimental automated workflows only. Not financial advice. Directional values have no demonstrated standalone edge. Results will vary. Never risk capital you can't afford to lose.
 
 ---
 
