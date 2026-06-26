@@ -219,6 +219,10 @@ Add to your Claude Desktop config (`claude_desktop_config.json`):
 
 Not currently listed on Smithery. Use the `npx` install flow shown above until a verified public listing is live.
 
+### Developer smoke-test note
+
+When testing the published package with an MCP stdio harness, do not launch `npx coinopai-mcp@...` from inside the `coinopai-mcp` source checkout. npm can prefer the local package context and fail before the temporary bin is available. Test from another directory, or install into a temp project and launch `./node_modules/.bin/coinopai-mcp`.
+
 ### Registry status
 
 Prepared MCP Registry identity: `io.github.forgemeshlabs/coinopai-mcp`. Refresh the public directory submission after publishing this package so old `clawdbotworker` entries stop being canonical.
