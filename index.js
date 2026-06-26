@@ -94,7 +94,7 @@ const TOOLS = [
   },
   {
     name: "get_crypto_decision",
-    description: "Create a probabilistic decision journal entry from Kronos context, then verify it. Returns CONSIDER_LONG/SHORT/NO_ACTION with confidence, regime, and a decision_id. Call audit_trade_decision with that ID after the evaluation window to see what happened. Costs $0.15 USDC.",
+    description: "Create a market-intelligence journal entry from Kronos context. Returns directional_bias, confidence context, compliance metadata, regime, anomaly/calibration context, and a decision_id. Call audit_trade_decision with that ID after the evaluation window to see what happened. Costs $0.15 USDC.",
     inputSchema: {
       type: "object",
       properties: {
@@ -138,6 +138,22 @@ const TOOLS = [
         symbol: { type: "string", description: "Symbol: BTC, ETH, SOL, XRP, ADA (default: BTC)" },
         affiliate_id: { type: "string", description: "Optional Pyrimid affiliate ID (af_xxxxx). Affiliate earns a commission from within the listed price — no extra cost to you." }
       }
+    }
+  },
+  {
+    name: "review_signal_anomaly",
+    description: "Score a market signal feature set for unusual conditions before downstream analysis. Returns anomaly_score, anomaly_level, review_label, drivers, component scores, and market-intelligence disclaimers. Not financial advice and not a market activity instruction. Costs $0.07 USDC.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        symbol: { type: "string", description: "Symbol to review, e.g. BTC, ETH, SOL, XRP, ADA, AAPL, SPY" },
+        window: { type: "string", description: "Observation window label, e.g. 24h (default: 24h)" },
+        features: {
+          type: "object",
+          description: "Numeric feature values to score, such as price_change, volume_change, volatility, signal_confidence, risk_score, social_velocity, or onchain_velocity."
+        }
+      },
+      required: ["symbol", "features"]
     }
   }
 ];
@@ -192,10 +208,14 @@ async function callPaid(ctx, path, affiliateId, opts = {}) {
   const baseUrl = opts.baseUrl || BASE_URL;
   const pyrimidProducts = opts.pyrimidProducts || PYRIMID_PRODUCTS;
   const pathname = new URL(path, baseUrl).pathname;
+  const method = opts.method || "GET";
+  const body = opts.body;
+  const bodyHeaders = body ? { "Content-Type": "application/json" } : {};
+  const bodyInit = body ? { body: JSON.stringify(body) } : {};
 
   // Use Pyrimid affiliate flow when affiliate_id present and product is registered.
   // Fall back to direct x402 if the affiliate route is unavailable or not yet cataloged.
-  if (affiliateId && pyrimidProducts[pathname]) {
+  if (method === "GET" && affiliateId && pyrimidProducts[pathname]) {
     try {
       return await callPyrimid(account, path, affiliateId, baseUrl, pyrimidProducts);
     } catch (_) {
@@ -206,7 +226,7 @@ async function callPaid(ctx, path, affiliateId, opts = {}) {
   // Standard x402 EIP-3009 flow
   const url = baseUrl + path;
   const extraHeaders = affiliateId ? { "X-Affiliate-ID": affiliateId } : {};
-  const res = await fetch(url, { headers: extraHeaders });
+  const res = await fetch(url, { method, headers: { ...bodyHeaders, ...extraHeaders }, ...bodyInit });
 
   if (res.status === 402) {
     let body;
@@ -216,7 +236,9 @@ async function callPaid(ctx, path, affiliateId, opts = {}) {
     );
     const paymentPayload = await httpClient.createPaymentPayload(paymentRequired);
     const paidRes = await fetch(url, {
-      headers: { ...httpClient.encodePaymentSignatureHeader(paymentPayload), ...extraHeaders },
+      method,
+      headers: { ...bodyHeaders, ...httpClient.encodePaymentSignatureHeader(paymentPayload), ...extraHeaders },
+      ...bodyInit,
     });
     if (!paidRes.ok) {
       const errBody = await paidRes.text().catch(() => paidRes.statusText);
@@ -240,7 +262,7 @@ async function main() {
   }
 
   const server = new Server(
-    { name: "coinopai-mcp", version: "1.2.8" },
+    { name: "coinopai-mcp", version: "1.2.9" },
     { capabilities: { tools: {} } }
   );
 
@@ -285,6 +307,16 @@ async function main() {
           break;
         case "get_crypto_forecast":
           data = await callPaid(paymentContext, `/api/kronos/forecast?symbol=${encodeURIComponent(args.symbol || "BTC")}`, affiliateId);
+          break;
+        case "review_signal_anomaly":
+          data = await callPaid(paymentContext, "/api/anomaly", null, {
+            method: "POST",
+            body: {
+              symbol: args.symbol || "BTC",
+              window: args.window || "24h",
+              features: args.features || {},
+            },
+          });
           break;
         default:
           throw new Error("Unknown tool: " + name);
