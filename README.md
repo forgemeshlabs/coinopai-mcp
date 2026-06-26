@@ -67,10 +67,10 @@ The agent calls a tool → the MCP server receives an `HTTP 402` → automatical
 check_trade_preflight  ──→  get_crypto_decision  ──→  [wait 1h]  ──→  audit_trade_decision
        $0.05                      $0.15                                      $0.07
 
-   Is now allowed?           CONSIDER_LONG/SHORT              GOOD_DECISION
-   Cooldown check?           NO_ACTION                        BAD_DIRECTION
-   Regime ok?                + decision_id                    NOISE
-   Model context?            + next_step hint                 + pnl_pct
+   Market state?             Directional context              Outcome record
+   Cooldown context?         Confidence context               Direction held?
+   Regime context?           + decision_id                    Verdict
+   Data freshness?           + audit hint                     + pnl_pct
 ```
 
 Every decision is self-verifying. The `decision_id` links the setup to the outcome. The audit fetches real market prices and produces a verdict. Nothing is hidden.
@@ -122,8 +122,9 @@ Directional values are supporting context, not guarantees, human recommendations
 ```json
 {
   "symbol": "BTC/USD",
-  "suggested_action": "CONSIDER_LONG",
+  "directional_bias": "upward",
   "confidence": 0.514,
+  "compliance_mode": "market_intelligence_only",
   "regime": "TREND",
   "decision_id": "a3f8c1d2-9472-4dfe-b459-5df17b282614",
   "directional_edge": "none_demonstrated",
@@ -158,6 +159,7 @@ Audit verdicts include `GOOD_DECISION`, `BAD_DIRECTION`, `NOISE`, `NO_ACTION_TAK
 | `get_crypto_signals` | Model context for BTC, ETH, SOL, XRP, ADA | $0.05 | ✓ |
 | `get_crypto_signal_history` | Up to 168h of context history for analysis | $0.05 | ✓ |
 | `get_crypto_forecast` | Conformally-calibrated 80% price range (~0.80 empirical coverage) for BTC, ETH, SOL, XRP, ADA | $0.05 | ✓ |
+| `review_signal_anomaly` | Score signal features for unusual conditions; returns review labels, drivers, and component scores | $0.07 | — |
 | `get_crypto_risk` | Market risk state and cooldown context | $0.02 | — |
 | `search_agent_automations` | Search 819 agent automation prompts | $0.01 | — |
 | `get_agent_automation` | Full prompt + workflow steps by slug | $0.01 | — |
@@ -187,7 +189,7 @@ Add to `~/.claude/settings.json`:
 }
 ```
 
-Restart Claude Code. The 10 tools appear automatically.
+Restart Claude Code. The tools appear automatically.
 
 ### Claude Desktop
 
@@ -235,16 +237,27 @@ Prepared MCP Registry identity: `io.github.forgemeshlabs/coinopai-mcp`. Refresh 
 const pre = await mcp.call("check_trade_preflight", { symbol: "BTC" })
 if (!pre.allowed) return  // cooldown, bad regime, or stale data
 
-// Step 2 — get decision ($0.15)
+// Step 2 — get decision journal ($0.15)
 const dec = await mcp.call("get_crypto_decision", { symbol: "BTC" })
-if (dec.suggested_action === "NO_ACTION") return
 
 // Store the decision_id — you'll need it to close the loop
-const { decision_id, suggested_action, confidence } = dec
+const { decision_id, directional_bias, confidence } = dec
 
-// Step 3 — act on the decision here...
+// Optional — review a feature set for anomaly context ($0.07)
+const anomaly = await mcp.call("review_signal_anomaly", {
+  symbol: "BTC",
+  window: "24h",
+  features: {
+    price_change: 0.018,
+    volume_change: 0.42,
+    volatility: 0.031,
+    signal_confidence: 72,
+    risk_score: 31
+  }
+})
+// review_label: "normal_review" | "review" | "elevated_review" | "critical_review"
 
-// Step 4 — audit 1 hour later ($0.07)
+// Step 3 — audit 1 hour later ($0.07)
 const audit = await mcp.call("audit_trade_decision", {
   decision_id,
   window: "1h"
