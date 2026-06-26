@@ -6,6 +6,7 @@
 - Aligned EVM scheme registration with the live paid sweep path used by the CoinOpAI service.
 - Sign x402 authorizations against latest Base block time to tolerate local/RPC clock skew.
 - Include x402 settlement metadata in successful tool responses under `_payment`.
+- Verified from a fresh npm install with a paid 10/10 MCP sweep on 2026-06-26.
 
 ## 1.2.9
 

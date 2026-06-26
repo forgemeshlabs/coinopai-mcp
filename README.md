@@ -59,6 +59,10 @@ Trust the process less. Verify the record more.
 
 The agent calls a tool → the MCP server receives an `HTTP 402` → automatically signs a USDC micropayment → retries with the payment header → data returned. Configure once, pay automatically from the configured low-balance wallet.
 
+Current package: `coinopai-mcp@1.2.10`.
+
+Settlement note: the MCP pins `@x402/core` and `@x402/evm` to `2.11.0` and signs EIP-3009 authorizations with a chain-aware timestamp. This avoids the Base RPC/facilitator clock-skew failure mode where a payment can be rejected as "authorization is not yet valid" or "valid before expired". Successful object responses include x402 settlement metadata under `_payment`, including the on-chain transaction hash when available.
+
 ---
 
 ## The Auditable Loop ($0.27/cycle)
@@ -146,6 +150,8 @@ Directional values are supporting context, not guarantees, human recommendations
 ```
 
 Audit verdicts include `GOOD_DECISION`, `BAD_DIRECTION`, `NOISE`, `NO_ACTION_TAKEN`, and `PENDING`. Kronos gets some right, gets some wrong, and exposes both through the same record.
+
+Fresh audits can return `pending_window` until the evaluation window matures.
 
 ---
 
@@ -289,6 +295,8 @@ Route to an available symbol or wait 15 minutes for the next cycle.
 | Network | Base mainnet (`eip155:8453`) |
 | Token | USDC (`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`) |
 | Facilitator | Coinbase |
+| Client SDK pins | `@x402/core@2.11.0`, `@x402/evm@2.11.0` |
+| Receipt metadata | Successful object responses include `_payment` |
 
 ---
 
