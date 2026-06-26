@@ -5,7 +5,7 @@ const { Server } = require("@modelcontextprotocol/sdk/server/index.js");
 const { StdioServerTransport } = require("@modelcontextprotocol/sdk/server/stdio.js");
 const { CallToolRequestSchema, ListToolsRequestSchema } = require("@modelcontextprotocol/sdk/types.js");
 const { x402Client, x402HTTPClient } = require("@x402/core/client");
-const { registerExactEvmScheme } = require("@x402/evm/exact/client");
+const { ExactEvmScheme } = require("@x402/evm/exact/client");
 const { toClientEvmSigner } = require("@x402/evm");
 const { privateKeyToAccount } = require("viem/accounts");
 const { createPublicClient, createWalletClient, http, parseAbi } = require("viem");
@@ -36,6 +36,7 @@ const IMAGEGEN_URL = "https://imagegen.coinopai.com";
 const PYRIMID_PRODUCTS_IMAGEGEN = {
   "/generate": { productId: 3n, priceUsdc: 100000n },
 };
+const BASE_RPC_URL = process.env.BASE_RPC_URL || "https://mainnet.base.org";
 
 const TOOLS = [
   {
@@ -163,12 +164,34 @@ function buildHttpClient() {
   if (!key) throw new Error("WALLET_PRIVATE_KEY required — set a Base wallet private key with USDC funded");
   const pk = key.startsWith("0x") ? key : "0x" + key;
   const account = privateKeyToAccount(pk);
-  const signer = toClientEvmSigner(account);
-  const coreClient = registerExactEvmScheme(new x402Client(), { signer });
+  const coreClient = new x402Client().register("eip155:*", new ExactEvmScheme(toClientEvmSigner(account)));
   return { httpClient: new x402HTTPClient(coreClient), account };
 }
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+async function createChainTimedPaymentPayload(httpClient, paymentRequired) {
+  try {
+    const publicClient = createPublicClient({ chain: base, transport: http(BASE_RPC_URL) });
+    const block = await publicClient.getBlock();
+    const chainNow = Number(block.timestamp);
+    const originalNow = Date.now;
+    const localNow = Math.floor(originalNow() / 1000);
+    const timeout = Number(paymentRequired.accepts?.[0]?.maxTimeoutSeconds || 300);
+    const lowerBound = localNow + 30 - timeout;
+    const upperBound = chainNow + 600;
+    const signingNow = Math.min(Math.max(chainNow, lowerBound), upperBound);
+    // x402 derives EIP-3009 validity windows from Date.now; choose a timestamp valid for both Base block time and facilitator wall-clock checks.
+    Date.now = () => signingNow * 1000;
+    try {
+      return await httpClient.createPaymentPayload(paymentRequired);
+    } finally {
+      Date.now = originalNow;
+    }
+  } catch (_) {
+    return httpClient.createPaymentPayload(paymentRequired);
+  }
+}
 
 // Pyrimid affiliate flow — approve + routePayment on-chain, then retry with tx hash
 async function callPyrimid(account, path, affiliateId, baseUrl, products) {
@@ -176,7 +199,7 @@ async function callPyrimid(account, path, affiliateId, baseUrl, products) {
   const product = products[pathname];
   if (!product) throw new Error(`No Pyrimid product registered for ${pathname}`);
   const url = baseUrl + path;
-  const transport = http();
+  const transport = http(BASE_RPC_URL);
   const publicClient = createPublicClient({ chain: base, transport });
   const walletClient = createWalletClient({ account, chain: base, transport });
 
@@ -234,7 +257,7 @@ async function callPaid(ctx, path, affiliateId, opts = {}) {
     const paymentRequired = httpClient.getPaymentRequiredResponse(
       (name) => res.headers.get(name), body
     );
-    const paymentPayload = await httpClient.createPaymentPayload(paymentRequired);
+    const paymentPayload = await createChainTimedPaymentPayload(httpClient, paymentRequired);
     const paidRes = await fetch(url, {
       method,
       headers: { ...bodyHeaders, ...httpClient.encodePaymentSignatureHeader(paymentPayload), ...extraHeaders },
@@ -244,7 +267,14 @@ async function callPaid(ctx, path, affiliateId, opts = {}) {
       const errBody = await paidRes.text().catch(() => paidRes.statusText);
       throw new Error(`HTTP ${paidRes.status}: ${errBody.slice(0, 200)}`);
     }
-    return paidRes.json();
+    const data = await paidRes.json();
+    try {
+      const settleResponse = httpClient.getPaymentSettleResponse((name) => paidRes.headers.get(name));
+      if (settleResponse && data && typeof data === "object" && !Array.isArray(data)) {
+        return { ...data, _payment: settleResponse };
+      }
+    } catch (_) {}
+    return data;
   }
 
   if (!res.ok) {
@@ -262,7 +292,7 @@ async function main() {
   }
 
   const server = new Server(
-    { name: "coinopai-mcp", version: "1.2.9" },
+    { name: "coinopai-mcp", version: "1.2.10" },
     { capabilities: { tools: {} } }
   );
 
