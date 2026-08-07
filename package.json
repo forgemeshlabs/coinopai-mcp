@@ -1,6 +1,6 @@
 {
   "name": "coinopai-mcp",
-  "version": "1.2.10",
+  "version": "2.0.0",
   "mcpName": "io.github.forgemeshlabs/coinopai-mcp",
   "description": "Auditable market intelligence MCP with x402 payments, calibrated forecast ranges, anomaly review, risk context, and outcome audits",
   "main": "index.js",
@@ -16,7 +16,7 @@
     "start": "node index.js"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "keywords": [
     "mcp",
@@ -47,7 +47,7 @@
     "url": "https://github.com/forgemeshlabs/coinopai-mcp/issues"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.10.1",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@x402/core": "2.11.0",
     "@x402/evm": "2.11.0",
     "viem": "^2.0.0"
