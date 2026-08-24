@@ -41,6 +41,12 @@ const BASE_RPC_URL = process.env.BASE_RPC_URL || "https://mainnet.base.org";
 const TOOLS = [
   {
     name: "search_agent_automations",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     description: "Search 819 agent automation prompts by keyword. Returns matching automations with title, description, complexity and services. Costs $0.01 USDC.",
     inputSchema: {
       type: "object",
@@ -53,6 +59,12 @@ const TOOLS = [
   },
   {
     name: "get_agent_automation",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     description: "Get the full agent automation prompt and workflow steps by slug. Costs $0.01 USDC.",
     inputSchema: {
       type: "object",
@@ -64,11 +76,23 @@ const TOOLS = [
   },
   {
     name: "list_automation_categories",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     description: "List all 35 automation categories with counts. Costs $0.005 USDC.",
     inputSchema: { type: "object", properties: {} }
   },
   {
     name: "get_crypto_signals",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     description: "Latest Kronos model context for BTC, ETH, SOL, XRP, ADA. Directional values are supporting context, not standalone trade instructions; use them with the calibrated range, risk state, and audit record. Costs $0.05 USDC.",
     inputSchema: {
       type: "object",
@@ -79,11 +103,23 @@ const TOOLS = [
   },
   {
     name: "get_crypto_risk",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     description: "Current market risk state and cooldown context for Kronos decisions. Useful as supporting context, not a standalone trading command. Costs $0.02 USDC.",
     inputSchema: { type: "object", properties: {} }
   },
   {
     name: "get_crypto_signal_history",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     description: "Recent Kronos context history for BTC/ETH/SOL/XRP/ADA. Use it to inspect model context and freshness before or after a decision. Costs $0.05 USDC.",
     inputSchema: {
       type: "object",
@@ -95,6 +131,12 @@ const TOOLS = [
   },
   {
     name: "get_crypto_decision",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     description: "Create a market-intelligence journal entry from Kronos context. Returns directional_bias, confidence context, compliance metadata, regime, anomaly/calibration context, and a decision_id. Call audit_trade_decision with that ID after the evaluation window to see what happened. Costs $0.15 USDC.",
     inputSchema: {
       type: "object",
@@ -107,6 +149,12 @@ const TOOLS = [
   },
   {
     name: "check_trade_preflight",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     description: "Step 1 of the auditable decision loop. Checks market state, cooldown, data freshness, and model context before calling get_crypto_decision. Costs $0.05 USDC.",
     inputSchema: {
       type: "object",
@@ -119,6 +167,12 @@ const TOOLS = [
   },
   {
     name: "audit_trade_decision",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     description: "The accountability step. Verify a Kronos decision_id against later market prices. Returns whether direction held, PnL%, and a verdict: GOOD_DECISION, BAD_DIRECTION, NOISE, or NO_ACTION_TAKEN. Costs $0.07 USDC.",
     inputSchema: {
       type: "object",
@@ -132,6 +186,12 @@ const TOOLS = [
   },
   {
     name: "get_crypto_forecast",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     description: "Conformally-calibrated price forecast: an honest 80% prediction interval (range_80, ~0.80 empirical coverage) plus point return and upside probability for BTC/ETH/SOL/XRP/ADA. Directional bias is supporting context; the calibrated range is the validated product. Costs $0.05 USDC.",
     inputSchema: {
       type: "object",
@@ -143,6 +203,12 @@ const TOOLS = [
   },
   {
     name: "review_signal_anomaly",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     description: "Score a market signal feature set for unusual conditions before downstream analysis. Returns anomaly_score, anomaly_level, review_label, drivers, component scores, and market-intelligence disclaimers. Not financial advice and not a market activity instruction. Costs $0.07 USDC.",
     inputSchema: {
       type: "object",
