@@ -1,5 +1,7 @@
 # coinopai-mcp
 
+[![M8ven Verified](https://m8ven.ai/badge/mcp/forgemeshlabs-coinopai-mcp-1xiffo?variant=verified)](https://m8ven.ai/mcp/forgemeshlabs-coinopai-mcp-1xiffo)
+
 [![npm version](https://img.shields.io/npm/v/coinopai-mcp)](https://www.npmjs.com/package/coinopai-mcp)
 [![npm downloads](https://img.shields.io/npm/dm/coinopai-mcp)](https://www.npmjs.com/package/coinopai-mcp)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
