@@ -46,3 +46,6 @@ logs/
 *.jpg
 *.jpeg
 *.webp
+
+# local code-graph index, never committed
+.graphify/
