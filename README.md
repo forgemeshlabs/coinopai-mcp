@@ -8,6 +8,7 @@
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
 [![payments](https://img.shields.io/badge/payments-x402%20USDC-0052FF)](https://x402.org)
 [![network](https://img.shields.io/badge/network-Base-0052FF)](https://base.org)
+[![mcpservers.org](https://mcpservers.org/badge.svg)](https://mcpservers.org/servers/forgemeshlabs/coinopai-mcp)
 
 **Auditable market context with calibrated forecast ranges and outcome verification.**
 
