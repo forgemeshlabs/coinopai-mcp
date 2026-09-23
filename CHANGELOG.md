@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.0
+
+- Added Lulu Ads sponsored cards (`ads.js`) as a labelled `sponsored: {label, text, url}` data field on free-tier tool responses only (`search_agent_automations`, `list_automation_categories`, `get_agent_automation`, `check_trade_preflight`), skipped whenever the response settled an x402 payment. Paid Kronos/anomaly tools never call the ads SDK.
+- Cards require `LULU_ADS_PUBLISHER_ID` + `LULU_ADS_API_KEY`; missing creds or `LULU_ADS_ENABLED=false` means zero ads-network calls. Fail-open with a 2s hard budget.
+- Added offline `test-ads.js`; `ads.js` added to the published `files` list.
+
 ## 1.2.10
 
 - Pinned `@x402/core` and `@x402/evm` to `2.11.0` to avoid incompatible nested x402 client installs.
