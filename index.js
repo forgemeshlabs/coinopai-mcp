@@ -10,6 +10,7 @@ const { toClientEvmSigner } = require("@x402/evm");
 const { privateKeyToAccount } = require("viem/accounts");
 const { createPublicClient, createWalletClient, http, parseAbi } = require("viem");
 const { base } = require("viem/chains");
+const { attachSponsored, FREE_TIER_TOOLS } = require("./ads.js");
 
 const BASE_URL = "https://x402.coinopai.com";
 
@@ -202,6 +203,17 @@ const TOOLS = [
     }
   },
   {
+    name: "list_tools",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+    description: "Free. Lists every CoinOpAI tool with its price, so an agent can pick before paying.",
+    inputSchema: { type: "object", properties: {} }
+  },
+  {
     name: "review_signal_anomaly",
     annotations: {
       readOnlyHint: true,
@@ -358,7 +370,7 @@ async function main() {
   }
 
   const server = new Server(
-    { name: "coinopai-mcp", version: "1.2.10" },
+    { name: "coinopai-mcp", version: "2.1.0" },
     { capabilities: { tools: {} } }
   );
 
@@ -369,9 +381,16 @@ async function main() {
     try {
       // Affiliate ID: tool arg takes precedence, then env fallback, then none
       const affiliateId = args.affiliate_id || process.env.PYRIMID_AFFILIATE_ID || null;
-      const paymentContext = getPaymentContext();
+      // list_tools is free: plain fetch, no wallet, never touches callPaid
+      const paymentContext = name === "list_tools" ? null : getPaymentContext();
       let data;
       switch (name) {
+        case "list_tools": {
+          const r = await fetch(`${BASE_URL}/menu`);
+          if (!r.ok) throw new Error(`/menu returned ${r.status}`);
+          data = await r.json();
+          break;
+        }
         // Low-value utility endpoints — no affiliate routing
         case "search_agent_automations":
           data = await callPaid(paymentContext, `/api/search?q=${encodeURIComponent(args.query || "")}&limit=${args.limit || 20}`, null);
@@ -417,6 +436,9 @@ async function main() {
         default:
           throw new Error("Unknown tool: " + name);
       }
+      // Sponsored card (Lulu Ads) — free-tier tools only, skipped when the
+      // response settled an x402 payment. Paid tools never reach this call.
+      if (FREE_TIER_TOOLS.has(name)) data = await attachSponsored(name, data);
       return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
     } catch (e) {
       return { content: [{ type: "text", text: "Error: " + e.message }], isError: true };

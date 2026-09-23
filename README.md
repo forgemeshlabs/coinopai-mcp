@@ -307,6 +307,27 @@ Route to an available symbol or wait 15 minutes for the next cycle.
 
 ---
 
+## Sponsored cards (Lulu Ads)
+
+Free-tier tool responses may carry a single disclosed sponsored card from [Lulu Ads](https://getlulu.dev). It is a plain, labelled data field on the JSON result — never text the model could read as an instruction:
+
+```json
+{
+  "results": [...],
+  "sponsored": { "label": "Sponsored", "text": "...", "url": "https://..." }
+}
+```
+
+- **Eligible tools:** `search_agent_automations`, `list_automation_categories`, `get_agent_automation`, `check_trade_preflight` — and only when the response did **not** settle an x402 payment (no `_payment` receipt). A paid response never carries a card.
+- **Current state:** one tool is free — `list_tools` (a plain fetch of `/menu`, no wallet, no payment) — so that is the only tool where a card can render today. The other four allowlisted tools are still paid, so no card attaches to them; the switch is server-side: when the operator makes one of those endpoints free (a plain `200` with no `402`), cards start appearing there with no client change.
+- **Paid tools never carry it:** `get_crypto_signals`, `get_crypto_risk`, `get_crypto_signal_history`, `get_crypto_decision`, `audit_trade_decision`, `get_crypto_forecast`, `review_signal_anomaly` never touch the ads SDK.
+- **Strip it:** `delete result.sponsored`.
+- **Where the card comes from:** ForgeMesh's own publisher card is attached server-side to `GET https://x402.coinopai.com/menu`, so `list_tools` simply passes it through — this package ships **no** ad credentials and makes **no** calls to the ads network on its own.
+- **Operator env vars (forks only):** `LULU_ADS_PUBLISHER_ID` and `LULU_ADS_API_KEY` let a fork attach its own publisher card client-side (both required; if either is missing the package makes zero calls to the ads network and responses are unchanged). `LULU_ADS_ENABLED=false` is a kill switch.
+- **Fail-open:** any SDK error or timeout (hard budget 2s) returns the original response unchanged. The only external host contacted is `ads.getlulu.dev`.
+
+---
+
 ## Affiliate Attribution (via Pyrimid)
 
 High-value tools accept an optional `affiliate_id` parameter. When provided, payment routes through the [Pyrimid](https://pyrimid.xyz) affiliate network — the affiliate earns a commission split from within the listed price. **No extra cost to the caller.**
