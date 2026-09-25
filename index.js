@@ -186,6 +186,63 @@ const TOOLS = [
     }
   },
   {
+    name: "get_futures_decision",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+    description: "Kronos Futures: perpetual-futures decision package. Direction LONG / SHORT / FLAT from the Kronos signal, stop-loss and take-profit on the calibrated 80% range, leverage cap keeping liquidation outside 2x the stop, liquidation price, risk-based position size for your equity, and live perp funding cost. Market intelligence only; no exchange execution. Costs $0.15 USDC.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        symbol: { type: "string", description: "Symbol: BTC, ETH, SOL, XRP, ADA (default: BTC)" },
+        equity: { type: "number", description: "Account equity in USD for position sizing (optional)" },
+        max_loss_pct: { type: "number", description: "Max loss per position as a fraction of equity (default 0.01)" },
+        max_leverage: { type: "number", description: "Your leverage ceiling, 1-5 (default 5)" }
+      }
+    }
+  },
+  {
+    name: "get_perp_funding",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+    description: "Kronos Futures: live perpetual funding rates (1h, 8h, annualized), mark/index price, open interest, and crowding label (LONG_CROWDED / SHORT_CROWDED / BALANCED) for BTC, ETH, SOL, XRP, ADA from Kraken Futures and Hyperliquid. Costs $0.02 USDC.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        symbol: { type: "string", description: "Optional single symbol; omit for all five" }
+      }
+    }
+  },
+  {
+    name: "check_futures_risk",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+    description: "Kronos Futures: will a leveraged perp position survive the calibrated range? Returns liquidation price and distance, adverse range bound, verdict (SURVIVES_RANGE / THIN_BUFFER / LIQUIDATION_INSIDE_RANGE), max surviving leverage, P&L at both range bounds, and funding cost. Costs $0.05 USDC.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        symbol: { type: "string", description: "Symbol: BTC, ETH, SOL, XRP, ADA (default: BTC)" },
+        side: { type: "string", description: "LONG or SHORT" },
+        leverage: { type: "number", description: "Leverage to test (1-125)" },
+        entry: { type: "number", description: "Entry price (defaults to current perp mark)" },
+        notional: { type: "number", description: "Position notional in USD for funding cost (optional)" },
+        horizon_hours: { type: "number", description: "Hours held for funding cost (optional)" }
+      },
+      required: ["side", "leverage"]
+    }
+  },
+  {
     name: "get_crypto_forecast",
     annotations: {
       readOnlyHint: true,
@@ -302,6 +359,13 @@ async function callPyrimid(account, path, affiliateId, baseUrl, products) {
     throw new Error(`Pyrimid retry failed: ${paidRes.status} ${err.slice(0, 200)}`);
   }
   return paidRes.json();
+}
+
+function queryString(params) {
+  const parts = Object.entries(params)
+    .filter(([, v]) => v !== undefined && v !== null && v !== "")
+    .map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`);
+  return parts.length ? `?${parts.join("&")}` : "";
 }
 
 async function callPaid(ctx, path, affiliateId, opts = {}) {
@@ -422,6 +486,15 @@ async function main() {
           break;
         case "get_crypto_forecast":
           data = await callPaid(paymentContext, `/api/kronos/forecast?symbol=${encodeURIComponent(args.symbol || "BTC")}`, affiliateId);
+          break;
+        case "get_futures_decision":
+          data = await callPaid(paymentContext, `/api/kronos/futures/decision${queryString({ symbol: args.symbol || "BTC", equity: args.equity, max_loss_pct: args.max_loss_pct, max_leverage: args.max_leverage })}`, null);
+          break;
+        case "get_perp_funding":
+          data = await callPaid(paymentContext, `/api/kronos/futures/funding${queryString({ symbol: args.symbol })}`, null);
+          break;
+        case "check_futures_risk":
+          data = await callPaid(paymentContext, `/api/kronos/futures/risk${queryString({ symbol: args.symbol || "BTC", side: args.side, leverage: args.leverage, entry: args.entry, notional: args.notional, horizon_hours: args.horizon_hours })}`, null);
           break;
         case "review_signal_anomaly":
           data = await callPaid(paymentContext, "/api/anomaly", null, {

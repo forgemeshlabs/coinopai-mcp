@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.0
+
+- Added the Kronos Futures tools: `get_futures_decision` ($0.15), `get_perp_funding` ($0.02), `check_futures_risk` ($0.05) over `/api/kronos/futures/*`. Direction from the spot signal, stop/target on the calibrated 80% range, leverage cap, liquidation price, sizing, live funding from Kraken Futures + Hyperliquid. Market intelligence only; no exchange execution. Paid, so never carry a sponsored card.
+
 ## 2.1.0
 
 - Added Lulu Ads sponsored cards (`ads.js`) as a labelled `sponsored: {label, text, url}` data field on free-tier tool responses only (`search_agent_automations`, `list_automation_categories`, `get_agent_automation`, `check_trade_preflight`), skipped whenever the response settled an x402 payment. Paid Kronos/anomaly tools never call the ads SDK.
