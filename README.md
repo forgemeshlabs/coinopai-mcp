@@ -168,6 +168,9 @@ Fresh audits can return `pending_window` until the evaluation window matures.
 | `get_crypto_signals` | Model context for BTC, ETH, SOL, XRP, ADA | $0.05 | ✓ |
 | `get_crypto_signal_history` | Up to 168h of context history for analysis | $0.05 | ✓ |
 | `get_crypto_forecast` | Conformally-calibrated 80% price range (~0.80 empirical coverage) for BTC, ETH, SOL, XRP, ADA | $0.05 | ✓ |
+| `get_perp_funding` | **Futures.** Live perp funding, mark/index, open interest, crowding (Kraken Futures + Hyperliquid) | $0.02 | — |
+| `check_futures_risk` | **Futures.** Will this side / leverage / entry survive the calibrated range? Liquidation distance + verdict | $0.05 | — |
+| `get_futures_decision` | **Futures.** LONG / SHORT / FLAT with stop and target on the calibrated range, leverage cap, liquidation, sizing, funding cost | $0.15 | — |
 | `review_signal_anomaly` | Score signal features for unusual conditions; returns review labels, drivers, and component scores | $0.07 | — |
 | `get_crypto_risk` | Market risk state and cooldown context | $0.02 | — |
 | `search_agent_automations` | Search 819 agent automation prompts | $0.01 | — |
@@ -320,7 +323,7 @@ Free-tier tool responses may carry a single disclosed sponsored card from [Lulu 
 
 - **Eligible tools:** `search_agent_automations`, `list_automation_categories`, `get_agent_automation`, `check_trade_preflight` — and only when the response did **not** settle an x402 payment (no `_payment` receipt). A paid response never carries a card.
 - **Current state:** one tool is free — `list_tools` (a plain fetch of `/menu`, no wallet, no payment) — so that is the only tool where a card can render today. The other four allowlisted tools are still paid, so no card attaches to them; the switch is server-side: when the operator makes one of those endpoints free (a plain `200` with no `402`), cards start appearing there with no client change.
-- **Paid tools never carry it:** `get_crypto_signals`, `get_crypto_risk`, `get_crypto_signal_history`, `get_crypto_decision`, `audit_trade_decision`, `get_crypto_forecast`, `review_signal_anomaly` never touch the ads SDK.
+- **Paid tools never carry it:** `get_crypto_signals`, `get_crypto_risk`, `get_crypto_signal_history`, `get_crypto_decision`, `audit_trade_decision`, `get_crypto_forecast`, `review_signal_anomaly`, `get_futures_decision`, `get_perp_funding`, `check_futures_risk` never touch the ads SDK.
 - **Strip it:** `delete result.sponsored`.
 - **Where the card comes from:** ForgeMesh's own publisher card is attached server-side to `GET https://x402.coinopai.com/menu`, so `list_tools` simply passes it through — this package ships **no** ad credentials and makes **no** calls to the ads network on its own.
 - **Operator env vars (forks only):** `LULU_ADS_PUBLISHER_ID` and `LULU_ADS_API_KEY` let a fork attach its own publisher card client-side (both required; if either is missing the package makes zero calls to the ads network and responses are unchanged). `LULU_ADS_ENABLED=false` is a kill switch.
