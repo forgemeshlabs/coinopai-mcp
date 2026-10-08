@@ -25,11 +25,7 @@ Environment variables schema:
   "type": "object",
   "properties": {
     "WALLET_PRIVATE_KEY": {
-      "description": "Base wallet private key for x402 micropayments",
-      "type": "string"
-    },
-    "PYRIMID_AFFILIATE_ID": {
-      "description": "Optional affiliate ID for Pyrimid attribution",
+      "description": "Dedicated low-balance Base wallet private key for x402 micropayments (the server only signs for its own backend, USDC on Base, within built-in caps)",
       "type": "string"
     }
   },
