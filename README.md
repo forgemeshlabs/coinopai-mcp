@@ -62,7 +62,7 @@ Trust the process less. Verify the record more.
 
 The agent calls a tool → the MCP server receives an `HTTP 402` → automatically signs a USDC micropayment → retries with the payment header → data returned. Configure once, pay automatically from the configured low-balance wallet.
 
-Current package: `coinopai-mcp@2.2.1`.
+Current package: `coinopai-mcp@2.2.2`.
 
 Settlement note: the MCP pins `@x402/core` and `@x402/evm` to `2.11.0`. Successful object responses include x402 settlement metadata under `_payment`, including the on-chain transaction hash when available.
 
