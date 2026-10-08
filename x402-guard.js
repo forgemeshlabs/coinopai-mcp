@@ -89,8 +89,8 @@ function createGuard(opts) {
           chunks.push(value);
         }
       }
-      const text = Buffer.concat(chunks).toString("utf8");
-      return { status: res.status, ok: res.ok, headers: res.headers, text };
+      const bytes = Buffer.concat(chunks);
+      return { status: res.status, ok: res.ok, headers: res.headers, bytes, text: bytes.toString("utf8") };
     } finally {
       clearTimeout(timer);
     }
@@ -117,9 +117,12 @@ function createGuard(opts) {
     const payload = await httpClient.createPaymentPayload(paymentRequired); // policy runs (and reserves budget) inside
     const paid = await fetchBounded(url, { ...init, headers: { ...init.headers, ...httpClient.encodePaymentSignatureHeader(payload) } });
     if (!paid.ok) throw new Error(`Payment failed — HTTP ${paid.status}: ${paid.text.slice(0, 200)}`);
-    const data = parseJson(paid);
     let settle = null;
     try { settle = httpClient.getPaymentSettleResponse((n) => paid.headers.get(n)) || null; } catch { settle = null; }
+    const contentType = paid.headers.get("content-type") || "";
+    // Non-JSON paid responses (audio, images) come back as raw bytes, never decoded as text.
+    if (!contentType.includes("json")) return { _binary: true, content_type: contentType, bytes: paid.bytes, _payment: settle };
+    const data = parseJson(paid);
     if (settle && data && typeof data === "object" && !Array.isArray(data)) return { ...data, _payment: settle };
     return data;
   }
