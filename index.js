@@ -8,36 +8,17 @@ const { x402Client, x402HTTPClient } = require("@x402/core/client");
 const { ExactEvmScheme } = require("@x402/evm/exact/client");
 const { toClientEvmSigner } = require("@x402/evm");
 const { privateKeyToAccount } = require("viem/accounts");
-const { createPublicClient, createWalletClient, http, parseAbi } = require("viem");
-const { base } = require("viem/chains");
 const { attachSponsored, FREE_TIER_TOOLS } = require("./ads.js");
+const { createGuard } = require("./x402-guard");
 
 const BASE_URL = "https://x402.coinopai.com";
-
-// Pyrimid constants — on-chain addresses for affiliate payment routing
-const PYRIMID_ROUTER = "0xc949AEa380D7b7984806143ddbfE519B03ABd68B";
-const PYRIMID_VENDOR_ID = "0x034604e25078e293d7b181fa23b3f2f6";
-const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-const ROUTER_ABI = parseAbi([
-  "function routePayment(bytes16 vendorId, uint256 productId, bytes16 affiliateId, address buyer, uint256 maxPrice) external",
-]);
-const USDC_ABI = parseAbi([
-  "function approve(address spender, uint256 amount) external returns (bool)",
-]);
-// Paths with registered Pyrimid product IDs — other paths fall back to standard x402
-const PYRIMID_PRODUCTS = {
-  "/api/kronos/signals":   { productId: 1n, priceUsdc:  50000n },
-  "/api/kronos/decision":  { productId: 2n, priceUsdc: 150000n },
-  "/api/kronos/preflight": { productId: 4n, priceUsdc:  50000n },
-  "/api/kronos/audit":     { productId: 5n, priceUsdc:  70000n },
-  "/api/kronos/risk":      { productId: 6n, priceUsdc:  20000n },
-  "/api/kronos/history":   { productId: 7n, priceUsdc:  50000n },
-};
-const IMAGEGEN_URL = "https://imagegen.coinopai.com";
-const PYRIMID_PRODUCTS_IMAGEGEN = {
-  "/generate": { productId: 3n, priceUsdc: 100000n },
-};
-const BASE_RPC_URL = process.env.BASE_RPC_URL || "https://mainnet.base.org";
+// Highest listed price on this backend is $0.15; the guard refuses anything above it.
+const guard = createGuard({
+  baseUrl: BASE_URL,
+  payTo: ["0x1304EC1A8945365e43A5c18a734065f107B417cA"],
+  maxPriceUsd: 0.15,
+  sessionBudgetUsd: 10,
+});
 
 const TOOLS = [
   {
@@ -52,7 +33,7 @@ const TOOLS = [
     inputSchema: {
       type: "object",
       properties: {
-        query: { type: "string", description: "Search keyword (e.g. 'slack', 'notion', 'github')" },
+        query: { type: "string", maxLength: 200, description: "Search keyword (e.g. 'slack', 'notion', 'github')" },
         limit: { type: "number", description: "Max results to return (default 20, max 50)" }
       },
       required: ["query"]
@@ -70,7 +51,7 @@ const TOOLS = [
     inputSchema: {
       type: "object",
       properties: {
-        slug: { type: "string", description: "Automation slug (e.g. 'slack-to-notion')" }
+        slug: { type: "string", maxLength: 200, pattern: "^[A-Za-z0-9._-]+$", description: "Automation slug (e.g. 'slack-to-notion')" }
       },
       required: ["slug"]
     }
@@ -98,7 +79,6 @@ const TOOLS = [
     inputSchema: {
       type: "object",
       properties: {
-        affiliate_id: { type: "string", description: "Optional Pyrimid affiliate ID (af_xxxxx). Affiliate earns a commission from within the listed price — no extra cost to you." }
       }
     }
   },
@@ -125,8 +105,7 @@ const TOOLS = [
     inputSchema: {
       type: "object",
       properties: {
-        hours: { type: "number", description: "Hours of history to fetch (default 24, max 168)" },
-        affiliate_id: { type: "string", description: "Optional Pyrimid affiliate ID (af_xxxxx). Affiliate earns a commission from within the listed price — no extra cost to you." }
+        hours: { type: "number", description: "Hours of history to fetch (default 24, max 168)" }
       }
     }
   },
@@ -142,8 +121,7 @@ const TOOLS = [
     inputSchema: {
       type: "object",
       properties: {
-        symbol: { type: "string", description: "Symbol to evaluate: BTC, ETH, SOL, XRP, or ADA" },
-        affiliate_id: { type: "string", description: "Optional Pyrimid affiliate ID (af_xxxxx). Affiliate earns a commission from within the listed price — no extra cost to you." }
+        symbol: { type: "string", description: "Symbol to evaluate: BTC, ETH, SOL, XRP, or ADA" }
       },
       required: ["symbol"]
     }
@@ -160,8 +138,7 @@ const TOOLS = [
     inputSchema: {
       type: "object",
       properties: {
-        symbol: { type: "string", description: "Symbol to check: BTC, ETH, SOL, XRP, or ADA" },
-        affiliate_id: { type: "string", description: "Optional Pyrimid affiliate ID (af_xxxxx). Affiliate earns a commission from within the listed price — no extra cost to you." }
+        symbol: { type: "string", description: "Symbol to check: BTC, ETH, SOL, XRP, or ADA" }
       },
       required: ["symbol"]
     }
@@ -179,8 +156,7 @@ const TOOLS = [
       type: "object",
       properties: {
         decision_id: { type: "string", description: "UUID from a previous get_crypto_decision call" },
-        window: { type: "string", description: "Evaluation window: 1h, 4h, or 24h (default: 4h)" },
-        affiliate_id: { type: "string", description: "Optional Pyrimid affiliate ID (af_xxxxx). Affiliate earns a commission from within the listed price — no extra cost to you." }
+        window: { type: "string", description: "Evaluation window: 1h, 4h, or 24h (default: 4h)" }
       },
       required: ["decision_id"]
     }
@@ -254,8 +230,7 @@ const TOOLS = [
     inputSchema: {
       type: "object",
       properties: {
-        symbol: { type: "string", description: "Symbol: BTC, ETH, SOL, XRP, ADA (default: BTC)" },
-        affiliate_id: { type: "string", description: "Optional Pyrimid affiliate ID (af_xxxxx). Affiliate earns a commission from within the listed price — no extra cost to you." }
+        symbol: { type: "string", description: "Symbol: BTC, ETH, SOL, XRP, ADA (default: BTC)" }
       }
     }
   },
@@ -299,213 +274,129 @@ function buildHttpClient() {
   if (!key) throw new Error("WALLET_PRIVATE_KEY required — set a Base wallet private key with USDC funded");
   const pk = key.startsWith("0x") ? key : "0x" + key;
   const account = privateKeyToAccount(pk);
-  const coreClient = new x402Client().register("eip155:*", new ExactEvmScheme(toClientEvmSigner(account)));
-  return { httpClient: new x402HTTPClient(coreClient), account };
+  const coreClient = new x402Client().register("eip155:*", new ExactEvmScheme(toClientEvmSigner(account))).registerPolicy(guard.policy);
+  return new x402HTTPClient(coreClient);
 }
 
-const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-
-async function createChainTimedPaymentPayload(httpClient, paymentRequired) {
-  try {
-    const publicClient = createPublicClient({ chain: base, transport: http(BASE_RPC_URL) });
-    const block = await publicClient.getBlock();
-    const chainNow = Number(block.timestamp);
-    const originalNow = Date.now;
-    const localNow = Math.floor(originalNow() / 1000);
-    const timeout = Number(paymentRequired.accepts?.[0]?.maxTimeoutSeconds || 300);
-    const lowerBound = localNow + 30 - timeout;
-    const upperBound = chainNow + 600;
-    const signingNow = Math.min(Math.max(chainNow, lowerBound), upperBound);
-    // x402 derives EIP-3009 validity windows from Date.now; choose a timestamp valid for both Base block time and facilitator wall-clock checks.
-    Date.now = () => signingNow * 1000;
-    try {
-      return await httpClient.createPaymentPayload(paymentRequired);
-    } finally {
-      Date.now = originalNow;
-    }
-  } catch (_) {
-    return httpClient.createPaymentPayload(paymentRequired);
-  }
+// Argument validation — runs before any network call or wallet access.
+const SYMBOLS = ["BTC", "ETH", "SOL", "XRP", "ADA"];
+function str(v, name, { max = 200, pattern } = {}) {
+  if (typeof v !== "string" || v.length === 0 || v.length > max) throw new Error(`${name} must be a non-empty string of at most ${max} characters`);
+  if (pattern && !pattern.test(v)) throw new Error(`${name} has an invalid format`);
+  return v;
 }
-
-// Pyrimid affiliate flow — approve + routePayment on-chain, then retry with tx hash
-async function callPyrimid(account, path, affiliateId, baseUrl, products) {
-  const pathname = new URL(path, baseUrl).pathname;
-  const product = products[pathname];
-  if (!product) throw new Error(`No Pyrimid product registered for ${pathname}`);
-  const url = baseUrl + path;
-  const transport = http(BASE_RPC_URL);
-  const publicClient = createPublicClient({ chain: base, transport });
-  const walletClient = createWalletClient({ account, chain: base, transport });
-
-  const approveHash = await walletClient.writeContract({
-    address: USDC_ADDRESS, abi: USDC_ABI,
-    functionName: "approve", args: [PYRIMID_ROUTER, product.priceUsdc],
-  });
-  await publicClient.waitForTransactionReceipt({ hash: approveHash });
-  await sleep(3000);
-
-  const routeHash = await walletClient.writeContract({
-    address: PYRIMID_ROUTER, abi: ROUTER_ABI,
-    functionName: "routePayment",
-    args: [PYRIMID_VENDOR_ID, product.productId, "0x00000000000000000000000000000000", account.address, product.priceUsdc],
-  });
-  await publicClient.waitForTransactionReceipt({ hash: routeHash });
-  await sleep(3000);
-
-  const paidRes = await fetch(url, { headers: { "X-Affiliate-ID": affiliateId, "X-Payment": routeHash } });
-  if (!paidRes.ok) {
-    const err = await paidRes.text().catch(() => paidRes.statusText);
-    throw new Error(`Pyrimid retry failed: ${paidRes.status} ${err.slice(0, 200)}`);
-  }
-  return paidRes.json();
+function num(v, name, min, max) {
+  if (typeof v !== "number" || !Number.isFinite(v) || v < min || v > max) throw new Error(`${name} must be a number between ${min} and ${max}`);
+  return v;
 }
-
-function queryString(params) {
-  const parts = Object.entries(params)
-    .filter(([, v]) => v !== undefined && v !== null && v !== "")
-    .map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`);
-  return parts.length ? `?${parts.join("&")}` : "";
-}
-
-async function callPaid(ctx, path, affiliateId, opts = {}) {
-  const { httpClient, account } = ctx;
-  const baseUrl = opts.baseUrl || BASE_URL;
-  const pyrimidProducts = opts.pyrimidProducts || PYRIMID_PRODUCTS;
-  const pathname = new URL(path, baseUrl).pathname;
-  const method = opts.method || "GET";
-  const body = opts.body;
-  const bodyHeaders = body ? { "Content-Type": "application/json" } : {};
-  const bodyInit = body ? { body: JSON.stringify(body) } : {};
-
-  // Use Pyrimid affiliate flow when affiliate_id present and product is registered.
-  // Fall back to direct x402 if the affiliate route is unavailable or not yet cataloged.
-  if (method === "GET" && affiliateId && pyrimidProducts[pathname]) {
-    try {
-      return await callPyrimid(account, path, affiliateId, baseUrl, pyrimidProducts);
-    } catch (_) {
-      affiliateId = null;
-    }
-  }
-
-  // Standard x402 EIP-3009 flow
-  const url = baseUrl + path;
-  const extraHeaders = affiliateId ? { "X-Affiliate-ID": affiliateId } : {};
-  const res = await fetch(url, { method, headers: { ...bodyHeaders, ...extraHeaders }, ...bodyInit });
-
-  if (res.status === 402) {
-    let body;
-    try { body = await res.clone().json(); } catch (_) {}
-    const paymentRequired = httpClient.getPaymentRequiredResponse(
-      (name) => res.headers.get(name), body
-    );
-    const paymentPayload = await createChainTimedPaymentPayload(httpClient, paymentRequired);
-    const paidRes = await fetch(url, {
-      method,
-      headers: { ...bodyHeaders, ...httpClient.encodePaymentSignatureHeader(paymentPayload), ...extraHeaders },
-      ...bodyInit,
-    });
-    if (!paidRes.ok) {
-      const errBody = await paidRes.text().catch(() => paidRes.statusText);
-      throw new Error(`HTTP ${paidRes.status}: ${errBody.slice(0, 200)}`);
-    }
-    const data = await paidRes.json();
-    try {
-      const settleResponse = httpClient.getPaymentSettleResponse((name) => paidRes.headers.get(name));
-      if (settleResponse && data && typeof data === "object" && !Array.isArray(data)) {
-        return { ...data, _payment: settleResponse };
-      }
-    } catch (_) {}
-    return data;
-  }
-
-  if (!res.ok) {
-    const errBody = await res.text().catch(() => res.statusText);
-    throw new Error(`HTTP ${res.status}: ${errBody.slice(0, 200)}`);
-  }
-  return res.json();
+function optNum(v, name, min, max) { return v === undefined || v === null ? undefined : num(v, name, min, max); }
+function symbol(v, dflt) {
+  if (v === undefined || v === null) return dflt;
+  const up = str(v, "symbol", { max: 10 }).toUpperCase();
+  if (!SYMBOLS.includes(up)) throw new Error(`symbol must be one of ${SYMBOLS.join(", ")}`);
+  return up;
 }
 
 async function main() {
-  let ctx;
-  function getPaymentContext() {
-    if (!ctx) ctx = buildHttpClient();
-    return ctx;
+  let httpClient;
+  function getHttpClient() {
+    if (!httpClient) httpClient = buildHttpClient();
+    return httpClient;
   }
 
   const server = new Server(
-    { name: "coinopai-mcp", version: "2.2.1" },
+    { name: "coinopai-mcp", version: require("./package.json").version },
     { capabilities: { tools: {} } }
   );
 
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS }));
 
   server.setRequestHandler(CallToolRequestSchema, async (req) => {
-    const { name, arguments: args } = req.params;
+    const { name } = req.params;
+    const args = req.params.arguments || {};
     try {
-      // Affiliate ID: tool arg takes precedence, then env fallback, then none
-      const affiliateId = args.affiliate_id || process.env.PYRIMID_AFFILIATE_ID || null;
-      // list_tools is free: plain fetch, no wallet, never touches callPaid
-      const paymentContext = name === "list_tools" ? null : getPaymentContext();
       let data;
       switch (name) {
         case "list_tools": {
-          const r = await fetch(`${BASE_URL}/menu`);
+          // Free: plain bounded fetch, no wallet
+          const r = await guard.fetchBounded("/menu");
           if (!r.ok) throw new Error(`/menu returned ${r.status}`);
-          data = await r.json();
+          try { data = JSON.parse(r.text); } catch (e) { throw new Error("/menu returned non-JSON: " + e.message); }
           break;
         }
-        // Low-value utility endpoints — no affiliate routing
-        case "search_agent_automations":
-          data = await callPaid(paymentContext, `/api/search?q=${encodeURIComponent(args.query || "")}&limit=${args.limit || 20}`, null);
+        case "search_agent_automations": {
+          const query = { q: str(args.query, "query", { max: 200 }), limit: args.limit === undefined ? 20 : num(args.limit, "limit", 1, 50) };
+          data = await guard.callPaid(getHttpClient(), "/api/search", { query });
           break;
+        }
         case "get_agent_automation":
-          data = await callPaid(paymentContext, `/api/automation/${encodeURIComponent(args.slug)}`, null);
+          data = await guard.callPaid(getHttpClient(), `/api/automation/${encodeURIComponent(str(args.slug, "slug", { max: 200, pattern: /^[A-Za-z0-9._-]+$/ }))}`);
           break;
         case "list_automation_categories":
-          data = await callPaid(paymentContext, "/api/categories", null);
+          data = await guard.callPaid(getHttpClient(), "/api/categories");
           break;
         case "get_crypto_risk":
-          data = await callPaid(paymentContext, "/api/kronos/risk", affiliateId);
+          data = await guard.callPaid(getHttpClient(), "/api/kronos/risk");
           break;
-        // High-value endpoints — affiliate routing enabled
         case "get_crypto_signals":
-          data = await callPaid(paymentContext, "/api/kronos/signals", affiliateId);
+          data = await guard.callPaid(getHttpClient(), "/api/kronos/signals");
           break;
         case "get_crypto_signal_history":
-          data = await callPaid(paymentContext, `/api/kronos/history?hours=${args.hours || 24}`, affiliateId);
+          data = await guard.callPaid(getHttpClient(), "/api/kronos/history", { query: { hours: args.hours === undefined ? 24 : num(args.hours, "hours", 1, 168) } });
           break;
         case "get_crypto_decision":
-          data = await callPaid(paymentContext, `/api/kronos/decision?symbol=${encodeURIComponent(args.symbol || "BTC")}`, affiliateId);
+          data = await guard.callPaid(getHttpClient(), "/api/kronos/decision", { query: { symbol: symbol(args.symbol, "BTC") } });
           break;
         case "check_trade_preflight":
-          data = await callPaid(paymentContext, `/api/kronos/preflight?symbol=${encodeURIComponent(args.symbol || "BTC")}`, affiliateId);
+          data = await guard.callPaid(getHttpClient(), "/api/kronos/preflight", { query: { symbol: symbol(args.symbol, "BTC") } });
           break;
-        case "audit_trade_decision":
-          data = await callPaid(paymentContext, `/api/kronos/audit?decision_id=${encodeURIComponent(args.decision_id)}&window=${encodeURIComponent(args.window || "4h")}`, affiliateId);
+        case "audit_trade_decision": {
+          const decisionId = str(args.decision_id, "decision_id", { max: 64, pattern: /^[A-Za-z0-9-]+$/ });
+          const windowArg = args.window === undefined ? "4h" : args.window;
+          if (!["1h", "4h", "24h"].includes(windowArg)) throw new Error("window must be one of 1h, 4h, 24h");
+          data = await guard.callPaid(getHttpClient(), "/api/kronos/audit", { query: { decision_id: decisionId, window: windowArg } });
           break;
+        }
         case "get_crypto_forecast":
-          data = await callPaid(paymentContext, `/api/kronos/forecast?symbol=${encodeURIComponent(args.symbol || "BTC")}`, affiliateId);
+          data = await guard.callPaid(getHttpClient(), "/api/kronos/forecast", { query: { symbol: symbol(args.symbol, "BTC") } });
           break;
         case "get_futures_decision":
-          data = await callPaid(paymentContext, `/api/kronos/futures/decision${queryString({ symbol: args.symbol || "BTC", equity: args.equity, max_loss_pct: args.max_loss_pct, max_leverage: args.max_leverage })}`, null);
+          data = await guard.callPaid(getHttpClient(), "/api/kronos/futures/decision", { query: {
+            symbol: symbol(args.symbol, "BTC"),
+            equity: optNum(args.equity, "equity", 0, 1e12),
+            max_loss_pct: optNum(args.max_loss_pct, "max_loss_pct", 0, 1),
+            max_leverage: optNum(args.max_leverage, "max_leverage", 1, 5),
+          } });
           break;
         case "get_perp_funding":
-          data = await callPaid(paymentContext, `/api/kronos/futures/funding${queryString({ symbol: args.symbol })}`, null);
+          data = await guard.callPaid(getHttpClient(), "/api/kronos/futures/funding", { query: { symbol: args.symbol === undefined ? undefined : symbol(args.symbol) } });
           break;
-        case "check_futures_risk":
-          data = await callPaid(paymentContext, `/api/kronos/futures/risk${queryString({ symbol: args.symbol || "BTC", side: args.side, leverage: args.leverage, entry: args.entry, notional: args.notional, horizon_hours: args.horizon_hours })}`, null);
+        case "check_futures_risk": {
+          const side = typeof args.side === "string" ? args.side.toUpperCase() : "";
+          if (side !== "LONG" && side !== "SHORT") throw new Error("side must be LONG or SHORT");
+          data = await guard.callPaid(getHttpClient(), "/api/kronos/futures/risk", { query: {
+            symbol: symbol(args.symbol, "BTC"),
+            side,
+            leverage: num(args.leverage, "leverage", 1, 125),
+            entry: optNum(args.entry, "entry", 0, 1e12),
+            notional: optNum(args.notional, "notional", 0, 1e12),
+            horizon_hours: optNum(args.horizon_hours, "horizon_hours", 0, 1e5),
+          } });
           break;
-        case "review_signal_anomaly":
-          data = await callPaid(paymentContext, "/api/anomaly", null, {
+        }
+        case "review_signal_anomaly": {
+          if (!args.features || typeof args.features !== "object" || Array.isArray(args.features)) throw new Error("features must be an object of numeric feature values");
+          if (JSON.stringify(args.features).length > 4000) throw new Error("features is too large");
+          data = await guard.callPaid(getHttpClient(), "/api/anomaly", {
             method: "POST",
             body: {
-              symbol: args.symbol || "BTC",
-              window: args.window || "24h",
-              features: args.features || {},
+              symbol: str(args.symbol, "symbol", { max: 20, pattern: /^[A-Za-z0-9._-]+$/ }),
+              window: args.window === undefined ? "24h" : str(args.window, "window", { max: 20, pattern: /^[A-Za-z0-9]+$/ }),
+              features: args.features,
             },
           });
           break;
+        }
         default:
           throw new Error("Unknown tool: " + name);
       }

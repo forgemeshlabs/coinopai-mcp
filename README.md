@@ -62,9 +62,9 @@ Trust the process less. Verify the record more.
 
 The agent calls a tool → the MCP server receives an `HTTP 402` → automatically signs a USDC micropayment → retries with the payment header → data returned. Configure once, pay automatically from the configured low-balance wallet.
 
-Current package: `coinopai-mcp@1.2.10`.
+Current package: `coinopai-mcp@2.2.1`.
 
-Settlement note: the MCP pins `@x402/core` and `@x402/evm` to `2.11.0` and signs EIP-3009 authorizations with a chain-aware timestamp. This avoids the Base RPC/facilitator clock-skew failure mode where a payment can be rejected as "authorization is not yet valid" or "valid before expired". Successful object responses include x402 settlement metadata under `_payment`, including the on-chain transaction hash when available.
+Settlement note: the MCP pins `@x402/core` and `@x402/evm` to `2.11.0`. Successful object responses include x402 settlement metadata under `_payment`, including the on-chain transaction hash when available.
 
 ---
 
@@ -160,22 +160,22 @@ Fresh audits can return `pending_window` until the evaluation window matures.
 
 ## Tools
 
-| Tool | What it does | Cost | Affiliate |
-|------|-------------|------|-----------|
-| `check_trade_preflight` | Gate check: market allowed, cooldown, regime, model context | $0.05 | ✓ |
-| `get_crypto_decision` | Probabilistic decision journal + `decision_id` | $0.15 | ✓ |
-| `audit_trade_decision` | Verify against real prices: verdict + PnL% | $0.07 | ✓ |
-| `get_crypto_signals` | Model context for BTC, ETH, SOL, XRP, ADA | $0.05 | ✓ |
-| `get_crypto_signal_history` | Up to 168h of context history for analysis | $0.05 | ✓ |
-| `get_crypto_forecast` | Conformally-calibrated 80% price range (~0.80 empirical coverage) for BTC, ETH, SOL, XRP, ADA | $0.05 | ✓ |
-| `get_perp_funding` | **Futures.** Live perp funding, mark/index, open interest, crowding (Kraken Futures + Hyperliquid) | $0.02 | — |
-| `check_futures_risk` | **Futures.** Will this side / leverage / entry survive the calibrated range? Liquidation distance + verdict | $0.05 | — |
-| `get_futures_decision` | **Futures.** LONG / SHORT / FLAT with stop and target on the calibrated range, leverage cap, liquidation, sizing, funding cost | $0.15 | — |
-| `review_signal_anomaly` | Score signal features for unusual conditions; returns review labels, drivers, and component scores | $0.07 | — |
-| `get_crypto_risk` | Market risk state and cooldown context | $0.02 | — |
-| `search_agent_automations` | Search 819 agent automation prompts | $0.01 | — |
-| `get_agent_automation` | Full prompt + workflow steps by slug | $0.01 | — |
-| `list_automation_categories` | All 35 automation categories with counts | $0.005 | — |
+| Tool | What it does | Cost |
+|------|-------------|------|
+| `check_trade_preflight` | Gate check: market allowed, cooldown, regime, model context | $0.05 |
+| `get_crypto_decision` | Probabilistic decision journal + `decision_id` | $0.15 |
+| `audit_trade_decision` | Verify against real prices: verdict + PnL% | $0.07 |
+| `get_crypto_signals` | Model context for BTC, ETH, SOL, XRP, ADA | $0.05 |
+| `get_crypto_signal_history` | Up to 168h of context history for analysis | $0.05 |
+| `get_crypto_forecast` | Conformally-calibrated 80% price range (~0.80 empirical coverage) for BTC, ETH, SOL, XRP, ADA | $0.05 |
+| `get_perp_funding` | **Futures.** Live perp funding, mark/index, open interest, crowding (Kraken Futures + Hyperliquid) | $0.02 |
+| `check_futures_risk` | **Futures.** Will this side / leverage / entry survive the calibrated range? Liquidation distance + verdict | $0.05 |
+| `get_futures_decision` | **Futures.** LONG / SHORT / FLAT with stop and target on the calibrated range, leverage cap, liquidation, sizing, funding cost | $0.15 |
+| `review_signal_anomaly` | Score signal features for unusual conditions; returns review labels, drivers, and component scores | $0.07 |
+| `get_crypto_risk` | Market risk state and cooldown context | $0.02 |
+| `search_agent_automations` | Search 819 agent automation prompts | $0.01 |
+| `get_agent_automation` | Full prompt + workflow steps by slug | $0.01 |
+| `list_automation_categories` | All 35 automation categories with counts | $0.005 |
 
 No API keys. No subscriptions. Pay per call in USDC.
 
@@ -241,6 +241,8 @@ Prepared MCP Registry identity: `io.github.forgemeshlabs/coinopai-mcp`. Refresh 
 2. Switch to **Base** network
 3. Buy or bridge USDC ($1 = ~3 full verified cycles)
 4. Use a dedicated low-balance Base wallet for agent payments and provide its private key locally via environment variable.
+
+**Payment safeguards.** The server only signs for the CoinOpAI payee wallet on Base mainnet, in USDC, at or below $0.15 per call and $10 per session. It refuses any other payee, network, asset, or amount before signing. Env `X402_MAX_PRICE_USD` and `X402_SESSION_BUDGET_USD` can only lower these caps. The server talks only to `https://x402.coinopai.com` (no redirects, 60s timeout, 2 MB response cap). Use a dedicated, low-balance wallet.
 
 > Your wallet key stays local. It never leaves your machine. Each payment is a signed micropayment — not a blanket approval.
 
@@ -328,63 +330,6 @@ Free-tier tool responses may carry a single disclosed sponsored card from [Lulu 
 - **Where the card comes from:** ForgeMesh's own publisher card is attached server-side to `GET https://x402.coinopai.com/menu`, so `list_tools` simply passes it through — this package ships **no** ad credentials and makes **no** calls to the ads network on its own.
 - **Operator env vars (forks only):** `LULU_ADS_PUBLISHER_ID` and `LULU_ADS_API_KEY` let a fork attach its own publisher card client-side (both required; if either is missing the package makes zero calls to the ads network and responses are unchanged). `LULU_ADS_ENABLED=false` is a kill switch.
 - **Fail-open:** any SDK error or timeout (hard budget 2s) returns the original response unchanged. The only external host contacted is `ads.getlulu.dev`.
-
----
-
-## Affiliate Attribution (via Pyrimid)
-
-High-value tools accept an optional `affiliate_id` parameter. When provided, payment routes through the [Pyrimid](https://pyrimid.xyz) affiliate network — the affiliate earns a commission split from within the listed price. **No extra cost to the caller.**
-
-### How the split works
-
-```
-Direct call (no affiliate_id):
-  Caller pays $0.15  →  CoinOpAI receives $0.15
-
-Affiliate call (affiliate_id present):
-  Caller pays $0.15  →  CoinOpAI: 79.2% ($0.1188)
-                      →  Affiliate: 19.8% ($0.0297)
-                      →  Protocol:   1.0% ($0.0015)
-```
-
-The buyer always pays the listed price. The split comes out of the vendor's portion.
-
-### Usage
-
-Pass `affiliate_id` in any supporting tool call:
-
-```js
-// As an agent or user
-await mcp.call("get_crypto_decision", {
-  symbol: "BTC",
-  affiliate_id: "af_youraffiliateID"
-})
-```
-
-### Building a wrapper? Set it once via env
-
-If you're building an agent framework, MCP wrapper, or automation that embeds CoinOpAI tools, set your affiliate ID as an environment variable. Every call through your wrapper earns you a commission automatically.
-
-```json
-{
-  "mcpServers": {
-    "coinopai": {
-      "command": "npx",
-      "args": ["-y", "coinopai-mcp"],
-      "env": {
-        "WALLET_PRIVATE_KEY": "0x<agent-wallet-key>",
-        "PYRIMID_AFFILIATE_ID": "af_<your-affiliate-id>"
-      }
-    }
-  }
-}
-```
-
-The tool-level `affiliate_id` argument takes precedence over the env var. Callers can always override.
-
-### Without an affiliate_id
-
-Normal x402 flow — CoinOpAI receives 100% of the listed price. Nothing changes for the caller.
 
 ---
 
