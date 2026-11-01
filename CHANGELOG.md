@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.3
+
+- Dependencies: lockfile refresh resolving the open npm advisories (zod via @x402/core, body-parser, fast-uri, qs, ip-address, @hono/node-server as applicable). No behavior change.
+
 ## 2.2.0
 
 - Added the Kronos Futures tools: `get_futures_decision` ($0.15), `get_perp_funding` ($0.02), `check_futures_risk` ($0.05) over `/api/kronos/futures/*`. Direction from the spot signal, stop/target on the calibrated 80% range, leverage cap, liquidation price, sizing, live funding from Kraken Futures + Hyperliquid. Market intelligence only; no exchange execution. Paid, so never carry a sponsored card.
