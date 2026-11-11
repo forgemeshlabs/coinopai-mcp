@@ -64,6 +64,8 @@ The agent calls a tool → the MCP server receives an `HTTP 402` → automatical
 
 Current package: `coinopai-mcp@2.2.3`.
 
+Hosted MCP: `https://x402.coinopai.com/mcp`. The handshake is free (`initialize`, `ping` and `tools/list` need no payment); only `tools/call` is charged.
+
 Settlement note: the MCP pins `@x402/core` and `@x402/evm` to `2.11.0`. Successful object responses include x402 settlement metadata under `_payment`, including the on-chain transaction hash when available.
 
 ---
