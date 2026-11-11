@@ -29,7 +29,7 @@ const TOOLS = [
       idempotentHint: false,
       openWorldHint: true,
     },
-    description: "Search 819 agent automation prompts by keyword. Returns matching automations with title, description, complexity and services. Costs $0.01 USDC.",
+    description: "Automation workflow search: keyword search over 819 ready-made agent automation prompts. Returns matching automations with slug, title, description, complexity and services. Costs $0.01 USDC.",
     inputSchema: {
       type: "object",
       properties: {
@@ -47,7 +47,7 @@ const TOOLS = [
       idempotentHint: false,
       openWorldHint: true,
     },
-    description: "Get the full agent automation prompt and workflow steps by slug. Costs $0.01 USDC.",
+    description: "Automation workflow prompt: the full executable agent prompt and workflow steps for one automation, by slug. Costs $0.01 USDC.",
     inputSchema: {
       type: "object",
       properties: {
@@ -75,7 +75,7 @@ const TOOLS = [
       idempotentHint: false,
       openWorldHint: true,
     },
-    description: "Latest Kronos model context for BTC, ETH, SOL, XRP, ADA. Directional values are supporting context, not standalone trade instructions; use them with the calibrated range, risk state, and audit record. Costs $0.05 USDC.",
+    description: "Crypto trading signals: latest Kronos signal scores for BTC, ETH, SOL, XRP and ADA. Directional values are supporting context, not standalone trade instructions; use them with the calibrated range, risk state and audit record. Costs $0.05 USDC.",
     inputSchema: {
       type: "object",
       properties: {
@@ -90,7 +90,7 @@ const TOOLS = [
       idempotentHint: false,
       openWorldHint: true,
     },
-    description: "Current market risk state and cooldown context for Kronos decisions. Useful as supporting context, not a standalone trading command. Costs $0.02 USDC.",
+    description: "Crypto market risk state: current risk state and cooldown context for Kronos decisions. Supporting context, not a standalone trading command. Costs $0.02 USDC.",
     inputSchema: { type: "object", properties: {} }
   },
   {
@@ -101,7 +101,7 @@ const TOOLS = [
       idempotentHint: false,
       openWorldHint: true,
     },
-    description: "Recent Kronos context history for BTC/ETH/SOL/XRP/ADA. Use it to inspect model context and freshness before or after a decision. Costs $0.05 USDC.",
+    description: "Crypto signal history: recent Kronos signal snapshots for BTC, ETH, SOL, XRP and ADA. Use it to inspect model context and freshness before or after a decision. Costs $0.05 USDC.",
     inputSchema: {
       type: "object",
       properties: {
@@ -117,7 +117,7 @@ const TOOLS = [
       idempotentHint: false,
       openWorldHint: true,
     },
-    description: "Create a market-intelligence journal entry from Kronos context. Returns directional_bias, confidence context, compliance metadata, regime, anomaly/calibration context, and a decision_id. Call audit_trade_decision with that ID after the evaluation window to see what happened. Costs $0.15 USDC.",
+    description: "Crypto decision journal: create a market-intelligence journal entry from Kronos context. Returns directional_bias, confidence context, compliance metadata, regime, anomaly/calibration context, and a decision_id. Call audit_trade_decision with that ID after the evaluation window to see what happened. Costs $0.15 USDC.",
     inputSchema: {
       type: "object",
       properties: {
@@ -134,7 +134,7 @@ const TOOLS = [
       idempotentHint: false,
       openWorldHint: true,
     },
-    description: "Step 1 of the auditable decision loop. Checks market state, cooldown, data freshness, and model context before calling get_crypto_decision. Costs $0.05 USDC.",
+    description: "Crypto market preflight: step 1 of the auditable decision loop. Checks market state, cooldown, data freshness, and model context before calling get_crypto_decision. Costs $0.05 USDC.",
     inputSchema: {
       type: "object",
       properties: {
@@ -151,7 +151,7 @@ const TOOLS = [
       idempotentHint: false,
       openWorldHint: true,
     },
-    description: "The accountability step. Verify a Kronos decision_id against later market prices. Returns whether direction held, PnL%, and a verdict: GOOD_DECISION, BAD_DIRECTION, NOISE, or NO_ACTION_TAKEN. Costs $0.07 USDC.",
+    description: "Decision outcome audit: the accountability step. Verify a Kronos decision_id against later market prices. Returns whether direction held, PnL%, and a verdict: GOOD_DECISION, BAD_DIRECTION, NOISE, or NO_ACTION_TAKEN. Costs $0.07 USDC.",
     inputSchema: {
       type: "object",
       properties: {
@@ -169,7 +169,7 @@ const TOOLS = [
       idempotentHint: false,
       openWorldHint: true,
     },
-    description: "Kronos Futures: perpetual-futures decision package. Direction LONG / SHORT / FLAT from the Kronos signal, stop-loss and take-profit on the calibrated 80% range, leverage cap keeping liquidation outside 2x the stop, liquidation price, risk-based position size for your equity, and live perp funding cost. Market intelligence only; no exchange execution. Costs $0.15 USDC.",
+    description: "Perpetual futures decision (Kronos Futures): perpetual-futures decision package. Direction LONG / SHORT / FLAT from the Kronos signal, stop-loss and take-profit on the calibrated 80% range, leverage cap keeping liquidation outside 2x the stop, liquidation price, risk-based position size for your equity, and live perp funding cost. Market intelligence only; no exchange execution. Costs $0.15 USDC.",
     inputSchema: {
       type: "object",
       properties: {
@@ -188,7 +188,7 @@ const TOOLS = [
       idempotentHint: false,
       openWorldHint: true,
     },
-    description: "Kronos Futures: live perpetual funding rates (1h, 8h, annualized), mark/index price, open interest, and crowding label (LONG_CROWDED / SHORT_CROWDED / BALANCED) for BTC, ETH, SOL, XRP, ADA from Kraken Futures and Hyperliquid. Costs $0.02 USDC.",
+    description: "Perpetual funding rates (Kronos Futures): live perpetual funding rates (1h, 8h, annualized), mark/index price, open interest, and crowding label (LONG_CROWDED / SHORT_CROWDED / BALANCED) for BTC, ETH, SOL, XRP, ADA from Kraken Futures and Hyperliquid. Costs $0.02 USDC.",
     inputSchema: {
       type: "object",
       properties: {
@@ -204,7 +204,7 @@ const TOOLS = [
       idempotentHint: false,
       openWorldHint: true,
     },
-    description: "Kronos Futures: will a leveraged perp position survive the calibrated range? Returns liquidation price and distance, adverse range bound, verdict (SURVIVES_RANGE / THIN_BUFFER / LIQUIDATION_INSIDE_RANGE), max surviving leverage, P&L at both range bounds, and funding cost. Costs $0.05 USDC.",
+    description: "Liquidation risk check (Kronos Futures): will a leveraged perp position survive the calibrated range? Returns liquidation price and distance, adverse range bound, verdict (SURVIVES_RANGE / THIN_BUFFER / LIQUIDATION_INSIDE_RANGE), max surviving leverage, P&L at both range bounds, and funding cost. Costs $0.05 USDC.",
     inputSchema: {
       type: "object",
       properties: {
@@ -226,7 +226,7 @@ const TOOLS = [
       idempotentHint: false,
       openWorldHint: true,
     },
-    description: "Conformally-calibrated price forecast: an honest 80% prediction interval (range_80, ~0.80 empirical coverage) plus point return and upside probability for BTC/ETH/SOL/XRP/ADA. Directional bias is supporting context; the calibrated range is the validated product. Costs $0.05 USDC.",
+    description: "Crypto price forecast, conformally calibrated: an honest 80% prediction interval (range_80, ~0.80 empirical coverage) plus point return and upside probability for BTC/ETH/SOL/XRP/ADA. Directional bias is supporting context; the calibrated range is the validated product. Costs $0.05 USDC.",
     inputSchema: {
       type: "object",
       properties: {
@@ -253,7 +253,7 @@ const TOOLS = [
       idempotentHint: false,
       openWorldHint: true,
     },
-    description: "Score a market signal feature set for unusual conditions before downstream analysis. Returns anomaly_score, anomaly_level, review_label, drivers, component scores, and market-intelligence disclaimers. Not financial advice and not a market activity instruction. Costs $0.07 USDC.",
+    description: "Signal anomaly detection: score a market signal feature set for unusual conditions before downstream analysis. Returns anomaly_score, anomaly_level, review_label, drivers, component scores, and market-intelligence disclaimers. Not financial advice and not a market activity instruction. Costs $0.07 USDC.",
     inputSchema: {
       type: "object",
       properties: {
