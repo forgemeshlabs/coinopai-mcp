@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.5
+
+- Errors now keep the service's refusal intact: HTTP `status`, `charged` flag and the parsed `upstream` body instead of a truncated string. Unpaid refusals (4xx before any signature) are marked `charged:false`. No tool or price change.
+
 ## 2.2.3
 
 - Dependencies: @x402/core + @x402/evm 2.11.0 → 2.29.0 (drops the transitive vulnerable zod); lockfile refresh resolving the open npm advisories (zod via @x402/core, body-parser, fast-uri, qs, ip-address, @hono/node-server as applicable). No behavior change.
