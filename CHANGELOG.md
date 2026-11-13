@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.6
+
+- Hardening: error messages are now short and fixed (HTTP status plus the service's error code); the service body is carried only as capped structured data in `upstream`, never interpolated into the message. No tool or price change.
+
 ## 2.2.5
 
 - Errors now keep the service's refusal intact: HTTP `status`, `charged` flag and the parsed `upstream` body instead of a truncated string. Unpaid refusals (4xx before any signature) are marked `charged:false`. No tool or price change.
