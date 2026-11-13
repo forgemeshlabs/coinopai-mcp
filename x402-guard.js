@@ -103,10 +103,11 @@ function createGuard(opts) {
   function httpError(res, prefix, charged) {
     let upstream;
     try { upstream = JSON.parse(res.text); } catch { upstream = res.text.slice(0, 500); }
-    const body = typeof upstream === "string" ? upstream : JSON.stringify(upstream).slice(0, 1500);
-    const err = new Error(`${prefix}HTTP ${res.status}: ${body}`);
+    // The message stays short and fixed; the service body travels only as structured, capped data.
+    const code = upstream && typeof upstream === "object" && typeof upstream.error === "string" && /^[a-z0-9_-]{1,64}$/i.test(upstream.error) ? ` ${upstream.error}` : "";
+    const err = new Error(`${prefix}HTTP ${res.status}${code}`);
     err.status = res.status;
-    err.upstream = upstream;
+    err.upstream = typeof upstream === "string" ? upstream.slice(0, 1500) : (JSON.stringify(upstream).length > 1500 ? JSON.stringify(upstream).slice(0, 1500) : upstream);
     if (charged !== undefined) err.charged = charged;
     else if (upstream && typeof upstream === "object" && typeof upstream.charged === "boolean") err.charged = upstream.charged;
     return err;
